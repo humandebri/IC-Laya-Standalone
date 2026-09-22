@@ -1,7 +1,9 @@
-//! Batch-one, unpadded F32 ModernBERT + option-marker decision head.
-//! This is a source implementation, NOT a verified port of the 421M checkpoint.
-//! Canonical tensor mapping and original-model parity remain release gates.
-#![forbid(unsafe_code)]
+//! Batch-one ModernBERT + option-marker head, with F32 and W8A8 weights.
+//! Sampled upstream parity is recorded in artifacts/laya_int8_parity.json.
+//! Sampled numerical parity does not establish decision quality or calibration.
+#![deny(unsafe_code)]
+pub mod int8;
+pub mod profile;
 pub mod pack;
 use candle_core::{DType,Device,Tensor,D};
 use ic_laya_core::{engine::InferenceBackend,BackendKind,Digest,Error,Result,TokenInput,MAX_TOKENS};
@@ -35,21 +37,32 @@ impl ModelConfig {
     }
 }
 #[derive(Clone)]
-pub struct Linear { weight:Tensor,bias:Option<Tensor> }
+pub enum Weight { F32(Tensor), Int8(int8::Int8Matrix) }
+impl Weight {
+    fn dims(&self)->Vec<usize>{match self{Self::F32(t)=>t.dims().to_vec(),Self::Int8(t)=>t.dims().to_vec()}}
+    fn gather(&self,ids:&[u32])->CResult<Tensor>{match self{
+        Self::F32(t)=>t.index_select(&Tensor::from_vec(ids.to_vec(),ids.len(),t.device())?,0),
+        Self::Int8(t)=>t.gather(ids),
+    }}
+}
+#[derive(Clone)]
+pub struct Linear { weight:Weight,bias:Option<Tensor> }
 impl Linear {
-    pub fn new(weight:Tensor,bias:Option<Tensor>)->Self{Self{weight,bias}}
-    pub fn forward(&self,x:&Tensor)->CResult<Tensor>{let y=x.matmul(&self.weight.t()?.contiguous()?)?;match &self.bias{Some(b)=>y.broadcast_add(b),None=>Ok(y)}}
+    pub fn new(weight:Tensor,bias:Option<Tensor>)->Self{Self{weight:Weight::F32(weight),bias}}
+    pub fn forward(&self,x:&Tensor)->CResult<Tensor>{let y=match &self.weight{Weight::F32(w)=>x.matmul(&w.t()?.contiguous()?)?,Weight::Int8(w)=>w.forward(x)?};match &self.bias{Some(b)=>y.broadcast_add(b),None=>Ok(y)}}
 }
 #[derive(Clone)]
 pub struct Norm { weight:Tensor,bias:Option<Tensor>,eps:f64 }
 impl Norm {
     pub fn new(weight:Tensor,bias:Option<Tensor>,eps:f64)->Self{Self{weight,bias,eps}}
     pub fn forward(&self,x:&Tensor)->CResult<Tensor>{
+        profile::measure("norm",[0,0,0],||{
         let mean=x.mean_keepdim(D::Minus1)?;
         let centered=x.broadcast_sub(&mean)?;
         let var=centered.sqr()?.mean_keepdim(D::Minus1)?;
         let y=centered.broadcast_div(&(var+self.eps)?.sqrt()?)?.broadcast_mul(&self.weight)?;
         match &self.bias{Some(b)=>y.broadcast_add(b),None=>Ok(y)}
+        })
     }
 }
 #[derive(Clone)]
@@ -72,13 +85,14 @@ impl Attention {
         let mut q=y.narrow(1,0,h)?.reshape((t,self.heads,d))?.transpose(0,1)?.contiguous()?;
         let mut k=y.narrow(1,h,h)?.reshape((t,self.heads,d))?.transpose(0,1)?.contiguous()?;
         let v=y.narrow(1,2*h,h)?.reshape((t,self.heads,d))?.transpose(0,1)?.contiguous()?;
-        if let Some(theta)=rotary {q=rope(&q,theta)?;k=rope(&k,theta)?;}
-        let mut scores=(q.contiguous()?.matmul(&k.transpose(1,2)?.contiguous()?)?*(1.0/(d as f64).sqrt()))?;
+        if let Some(theta)=rotary {(q,k)=profile::measure("attention.rope",[t,h,self.heads],||Ok::<_,candle_core::Error>((rope(&q,theta)?,rope(&k,theta)?)))?;}
+        let mut scores=profile::measure("attention.qk",[t,h,self.heads],||(q.contiguous()?.matmul(&k.transpose(1,2)?.contiguous()?)?*(1.0/(d as f64).sqrt())))?;
         if let Some(distance)=max_distance {
             let mask:Vec<f32>=(0..t).flat_map(|i|(0..t).map(move|j|if i.abs_diff(j)>distance{f32::NEG_INFINITY}else{0.0})).collect();
             scores=scores.broadcast_add(&Tensor::from_vec(mask,(1,t,t),x.device())?)?;
         }
-        let merged=softmax_last(&scores)?.matmul(&v)?.transpose(0,1)?.contiguous()?.reshape((t,h))?;
+        let probs=profile::measure("attention.softmax",[t,h,self.heads],||softmax_last(&scores))?;
+        let merged=profile::measure("attention.av",[t,h,self.heads],||probs.matmul(&v)?.transpose(0,1)?.contiguous()?.reshape((t,h)))?;
         self.out.forward(&merged)
     }
 }
@@ -104,7 +118,7 @@ impl EncoderLayer {
         mark("layer.attn_resid");
         let y=self.wi.forward(&self.mlp_norm.forward(&x)?)?;let half=y.dim(1)?/2;
         mark("layer.mlp_up");
-        let gate=(y.narrow(1,0,half)?.gelu_erf()?*y.narrow(1,half,half)?)?;
+        let gate=profile::measure("mlp.gelu_gate",[y.dim(0)?,half,0],||(y.narrow(1,0,half)?.gelu_erf()?*y.narrow(1,half,half)?))?;
         mark("layer.mlp_act");
         let out=(&x+self.wo.forward(&gate)?)?;
         mark("layer.mlp_down");
@@ -143,19 +157,29 @@ pub fn expected_tensors(c:&ModelConfig)->Result<BTreeMap<String,Vec<usize>>>{
     Ok(m)
 }
 
+/// In-memory continuation. A step runs one encoder/head layer (or final/scorer phase).
+/// The pack bundle is checked on every step, so model replacement cannot mix weights.
+#[derive(Clone)]
+pub struct InferenceSession { bundle:Digest,input:TokenInput,hidden:Tensor,next:usize }
+impl InferenceSession { pub fn completed_steps(&self)->usize{self.next} }
+
 pub struct LayaModel {
     pub config:ModelConfig,pub bundle:Digest,pub backend_kind:BackendKind,
-    embedding:Tensor,embedding_norm:Norm,layers:Vec<EncoderLayer>,final_norm:Norm,qtype:Tensor,
+    embedding:Weight,embedding_norm:Norm,layers:Vec<EncoderLayer>,final_norm:Norm,qtype:Weight,
     decision:Vec<DecisionLayer>,scorer_norm:Norm,scorer_dense:Linear,scorer_out:Linear,
 }
-fn tensor(m:&BTreeMap<String,Tensor>,name:&str)->Result<Tensor>{m.get(name).cloned().ok_or_else(||Error::Invalid(format!("missing tensor: {name}")))}
-fn linear(m:&BTreeMap<String,Tensor>,p:&str,bias:bool)->Result<Linear>{Ok(Linear{weight:tensor(m,&format!("{p}.weight"))?,bias:if bias{Some(tensor(m,&format!("{p}.bias"))?)}else{None}})}
-fn norm(m:&BTreeMap<String,Tensor>,p:&str,bias:bool,eps:f64)->Result<Norm>{Ok(Norm{weight:tensor(m,&format!("{p}.weight"))?,bias:if bias{Some(tensor(m,&format!("{p}.bias"))?)}else{None},eps})}
+fn weight(m:&BTreeMap<String,Weight>,name:&str)->Result<Weight>{m.get(name).cloned().ok_or_else(||Error::Invalid(format!("missing tensor: {name}")))}
+fn tensor(m:&BTreeMap<String,Weight>,name:&str)->Result<Tensor>{match weight(m,name)?{Weight::F32(t)=>Ok(t),Weight::Int8(_)=>Err(Error::Invalid(format!("expected F32: {name}")))}}
+fn linear(m:&BTreeMap<String,Weight>,p:&str,bias:bool)->Result<Linear>{Ok(Linear{weight:weight(m,&format!("{p}.weight"))?,bias:if bias{Some(tensor(m,&format!("{p}.bias"))?)}else{None}})}
+fn norm(m:&BTreeMap<String,Weight>,p:&str,bias:bool,eps:f64)->Result<Norm>{Ok(Norm{weight:tensor(m,&format!("{p}.weight"))?,bias:if bias{Some(tensor(m,&format!("{p}.bias"))?)}else{None},eps})}
 impl LayaModel {
     pub fn from_tensors(c:ModelConfig,bundle:Digest,kind:BackendKind,m:BTreeMap<String,Tensor>)->Result<Self>{
+        Self::from_weights(c,bundle,kind,m.into_iter().map(|(n,t)|(n,Weight::F32(t))).collect())
+    }
+    pub fn from_weights(c:ModelConfig,bundle:Digest,kind:BackendKind,m:BTreeMap<String,Weight>)->Result<Self>{
         let expected=expected_tensors(&c)?;
         if expected.len()!=m.len(){return Err(Error::Invalid("unexpected tensor set".into()));}
-        for (name,shape) in &expected {let t=m.get(name).ok_or_else(||Error::Invalid(format!("missing {name}")))?;if t.dims()!=shape.as_slice() || t.dtype()!=DType::F32{return Err(Error::Invalid(format!("shape/dtype: {name}")));}}
+        for (name,shape) in &expected {let t=m.get(name).ok_or_else(||Error::Invalid(format!("missing {name}")))?;if t.dims()!=*shape || matches!(t,Weight::F32(v) if v.dtype()!=DType::F32){return Err(Error::Invalid(format!("shape/dtype: {name}")));}}
         let mut layers=Vec::new();
         for i in 0..c.layers {let p=format!("encoder.{i}");let local=i%c.global_every!=0;
             layers.push(EncoderLayer{attention_norm:if i>0||c.first_layer_attention_norm{Some(norm(&m,&format!("{p}.attn_norm"),false,c.norm_eps)?)}else{None},
@@ -165,15 +189,53 @@ impl LayaModel {
         let mut decision=Vec::new();
         for i in 0..c.decision_layers {let p=format!("decision.{i}");decision.push(DecisionLayer{norm1:norm(&m,&format!("{p}.norm1"),true,c.decision_norm_eps)?,norm2:norm(&m,&format!("{p}.norm2"),true,c.decision_norm_eps)?,
             attention:Attention{qkv:linear(&m,&format!("{p}.qkv"),true)?,out:linear(&m,&format!("{p}.out"),true)?,heads:c.decision_heads},linear1:linear(&m,&format!("{p}.linear1"),true)?,linear2:linear(&m,&format!("{p}.linear2"),true)?,norm_first:c.decision_norm_first,activation:c.decision_activation});}
-        Ok(Self{embedding:tensor(&m,"embeddings.weight")?,embedding_norm:norm(&m,"embeddings.norm",false,c.norm_eps)?,final_norm:norm(&m,"final_norm",false,c.norm_eps)?,qtype:tensor(&m,"qtype.weight")?,
+        Ok(Self{embedding:weight(&m,"embeddings.weight")?,embedding_norm:norm(&m,"embeddings.norm",false,c.norm_eps)?,final_norm:norm(&m,"final_norm",false,c.norm_eps)?,qtype:weight(&m,"qtype.weight")?,
             scorer_norm:norm(&m,"scorer.norm",true,c.scorer_norm_eps)?,scorer_dense:linear(&m,"scorer.dense",true)?,scorer_out:linear(&m,"scorer.out",true)?,config:c,bundle,backend_kind:kind,layers,decision})
     }
+    fn validate_input(&self,input:&TokenInput)->Result<()>{
+        if input.input_ids.is_empty() || input.input_ids.len()>MAX_TOKENS || !(2..=7).contains(&input.markers.len()) || input.qtype_id as usize>=self.config.qtypes
+            || input.input_ids.iter().any(|&v|v as usize>=self.config.vocab_size){return Err(Error::Invalid("token input".into()));}
+        let mut prev=None;
+        for &p in &input.markers {if input.input_ids.get(p as usize)!=Some(&self.config.mask_token_id) || prev.is_some_and(|v|p<=v){return Err(Error::Invalid("option markers".into()));}prev=Some(p);}
+        Ok(())
+    }
+    pub fn inference_steps(&self)->usize{self.layers.len()+self.decision.len()+2}
+    pub fn begin_inference(&self,input:TokenInput)->Result<InferenceSession>{
+        self.validate_input(&input)?;
+        let hidden=self.embedding.gather(&input.input_ids).and_then(|x|self.embedding_norm.forward(&x)).map_err(|e|Error::ModelUnavailable(e.to_string()))?;
+        Ok(InferenceSession{bundle:self.bundle,input,hidden,next:0})
+    }
+    pub fn step_inference(&self,session:&mut InferenceSession)->Result<Option<Vec<f32>>>{
+        if session.bundle!=self.bundle{return Err(Error::BindingMismatch);}
+        let n=session.next;
+        if n>=self.inference_steps(){return Err(Error::Transition);}
+        let run=||->CResult<Tensor>{
+            if n<self.layers.len(){self.layers[n].forward(&session.hidden)}
+            else if n==self.layers.len(){
+                self.final_norm.forward(&session.hidden)?.broadcast_add(&self.qtype.gather(&[session.input.qtype_id])?)
+            }else if n<self.inference_steps()-1{
+                self.decision[n-self.layers.len()-1].forward(&session.hidden)
+            }else{
+                let markers=Tensor::from_vec(session.input.markers.clone(),session.input.markers.len(),&Device::Cpu)?;
+                let selected=session.hidden.index_select(&markers,0)?;
+                self.scorer_out.forward(&self.scorer_dense.forward(&self.scorer_norm.forward(&selected)?)?.gelu_erf()?)?.squeeze(1)
+            }
+        };
+        let hidden=run().map_err(|e|Error::ModelUnavailable(e.to_string()))?;
+        let logits=if n==self.inference_steps()-1{
+            let values=hidden.to_vec1::<f32>().map_err(|e|Error::ModelUnavailable(e.to_string()))?;
+            if values.iter().any(|x|!x.is_finite()){return Err(Error::Numeric);}
+            Some(values)
+        }else{None};
+        session.hidden=hidden;session.next+=1;
+        Ok(logits)
+    }
     fn forward_tensor(&self,input:&TokenInput)->CResult<Tensor>{
-        let dev=&Device::Cpu;let ids=Tensor::from_vec(input.input_ids.clone(),input.input_ids.len(),dev)?;
-        let mut x=self.embedding_norm.forward(&self.embedding.index_select(&ids,0)?)?;
+        let dev=&Device::Cpu;
+        let mut x=self.embedding_norm.forward(&self.embedding.gather(&input.input_ids)?)?;
         for layer in &self.layers{x=layer.forward(&x)?;}
         x=self.final_norm.forward(&x)?;
-        let qt=self.qtype.narrow(0,input.qtype_id as usize,1)?;x=x.broadcast_add(&qt)?;
+        let qt=self.qtype.gather(&[input.qtype_id])?;x=x.broadcast_add(&qt)?;
         for layer in &self.decision{x=layer.forward(&x)?;}
         let markers=Tensor::from_vec(input.markers.clone(),input.markers.len(),dev)?;
         let selected=x.index_select(&markers,0)?;
@@ -188,8 +250,8 @@ impl LayaModel {
     /// on native (where the counter is a stub returning 0) and inside a canister
     /// (where it reads `instruction_counter`) without a second implementation.
     fn forward_profiled(&self,input:&TokenInput,mark:&mut dyn FnMut(&'static str),detailed:bool)->CResult<Tensor>{
-        let dev=&Device::Cpu;let ids=Tensor::from_vec(input.input_ids.clone(),input.input_ids.len(),dev)?;
-        let mut x=self.embedding_norm.forward(&self.embedding.index_select(&ids,0)?)?;
+        let dev=&Device::Cpu;
+        let mut x=self.embedding_norm.forward(&self.embedding.gather(&input.input_ids)?)?;
         mark("embedding");
         if detailed {
             for layer in &self.layers{x=layer.forward_marked(&x,mark)?;}
@@ -198,7 +260,7 @@ impl LayaModel {
         }
         mark("encoder");
         x=self.final_norm.forward(&x)?;
-        let qt=self.qtype.narrow(0,input.qtype_id as usize,1)?;x=x.broadcast_add(&qt)?;
+        let qt=self.qtype.gather(&[input.qtype_id])?;x=x.broadcast_add(&qt)?;
         mark("final_norm");
         for layer in &self.decision{x=layer.forward(&x)?;}
         mark("decision");
@@ -221,10 +283,7 @@ impl LayaModel {
     /// As `infer_profiled`, but also marks the sub-phases of every encoder layer.
     /// The per-layer entries repeat, so callers should aggregate by name.
     pub fn infer_profiled_detailed(&mut self,input:&TokenInput,counter:&dyn Fn()->u64,detailed:bool)->Result<Vec<PhaseCost>>{
-        if input.input_ids.is_empty() || input.input_ids.len()>MAX_TOKENS || !(2..=7).contains(&input.markers.len()) || input.qtype_id as usize>=self.config.qtypes
-            || input.input_ids.iter().any(|&v|v as usize>=self.config.vocab_size){return Err(Error::Invalid("token input".into()));}
-        let mut prev=None;
-        for &p in &input.markers {if input.input_ids.get(p as usize)!=Some(&self.config.mask_token_id) || prev.is_some_and(|v|p<=v){return Err(Error::Invalid("option markers".into()));}prev=Some(p);}
+        self.validate_input(input)?;
         let mut costs:Vec<PhaseCost>=Vec::new();
         let mut last=counter();
         {
@@ -245,10 +304,7 @@ impl InferenceBackend for LayaModel {
     fn bundle_id(&self)->Digest{self.bundle}
     fn kind(&self)->BackendKind{self.backend_kind}
     fn infer(&mut self,input:&TokenInput)->Result<Vec<f32>>{
-        if input.input_ids.is_empty() || input.input_ids.len()>MAX_TOKENS || !(2..=7).contains(&input.markers.len()) || input.qtype_id as usize>=self.config.qtypes
-            || input.input_ids.iter().any(|&v|v as usize>=self.config.vocab_size){return Err(Error::Invalid("token input".into()));}
-        let mut prev=None;
-        for &p in &input.markers {if input.input_ids.get(p as usize)!=Some(&self.config.mask_token_id) || prev.is_some_and(|v|p<=v){return Err(Error::Invalid("option markers".into()));}prev=Some(p);}
+        self.validate_input(input)?;
         let v=self.forward_tensor(input).and_then(|t|t.to_vec1::<f32>()).map_err(|e|Error::ModelUnavailable(e.to_string()))?;
         if v.iter().any(|x|!x.is_finite()){return Err(Error::Numeric);}Ok(v)
     }

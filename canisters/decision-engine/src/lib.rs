@@ -21,10 +21,23 @@ thread_local!{
     static TOKENIZER:RefCell<Option<hf_tokenizer::HfTokenizer>>=const{RefCell::new(None)};
     static BUILDER:RefCell<Option<laya_candle::pack::Builder>>=const{RefCell::new(None)};
     static MODEL:RefCell<Option<laya_candle::LayaModel>>=const{RefCell::new(None)};
+    static INFERENCE:RefCell<Option<TokenJob>>=const{RefCell::new(None)};
 }
 fn read<R>(f:impl FnOnce(&Persistent)->R)->R{STATE.with(|x|f(x.borrow().as_ref().expect("initialized")))}
 fn mutate<R>(f:impl FnOnce(&mut Persistent)->R)->R{STATE.with(|x|{let mut state=x.borrow_mut();let state=state.as_mut().expect("initialized");let result=f(state);canister_common::persist_or_trap(state);result})}
-fn owner()->Result<()>{read(|s|if ic_cdk::api::msg_caller()==s.owner{Ok(())}else{Err(Error::Unauthorized)})}
+fn check_owner(s:&Persistent,caller:Principal)->Result<()>{if caller==s.owner{Ok(())}else{Err(Error::Unauthorized)}}
+fn owner()->Result<()>{read(|s|check_owner(s,ic_cdk::api::msg_caller()))}
+/// Recheck persisted schemas against the currently active pack, including after replacement.
+#[cfg(feature="candle")]
+fn check_schema_mapping(s:&Persistent,id:&Digest)->Result<()> {
+    if s.fixture_mode{return Ok(());}
+    let schema=s.engine.schemas.get(id).ok_or(Error::NotFound)?;
+    let upload=s.upload.as_ref().ok_or(Error::Transition)?;
+    if hash(&upload.manifest)!=s.engine.active_model{return Err(Error::BindingMismatch);}
+    let manifest=laya_candle::pack::Manifest::parse(&upload.manifest)?;
+    if schema.qtype_id!=manifest.primitive_to_qtype[schema.schema.primitive.tag() as usize]{return Err(Error::BindingMismatch);}
+    Ok(())
+}
 #[ic_cdk::init]
 fn init(owner:Principal){
     if owner==Principal::anonymous() || owner==Principal::management_canister(){ic_cdk::trap("invalid owner");}
@@ -72,7 +85,7 @@ fn register_calibration(c:Calibration)->Result<()>{owner()?;mutate(|s|s.engine.r
 ///
 /// This exists because the acceptance targets are instruction budgets and nothing
 /// reported a breakdown: `evaluate` returns one total for the whole call. It uses the
-/// same validation and caller checks as `evaluate` but **bypasses the cache**, since
+/// owner authorization and request validation but **bypasses the cache**, since
 /// a cached result would report nothing.
 ///
 /// It cannot move funds: it does not touch the executor, does not create a Receipt,
@@ -87,14 +100,15 @@ pub struct PhaseCostDto { pub name:String, pub instructions:u64 }
 #[cfg(feature="candle")]
 #[ic_cdk::update]
 fn measure_phases(req:DecisionRequest)->Result<Vec<PhaseCostDto>>{
-    let caller=ic_cdk::api::msg_caller();let now=ic_cdk::api::time();
-    if !read(|s|s.engine.callers.contains_key(&caller)){return Err(Error::Unauthorized);}
+    owner()?;
+    let now=ic_cdk::api::time();
     if req.state.is_empty() || req.state.len()>MAX_STATE_BYTES{return Err(Error::TooLong);}
     if req.expires_at_ns<=now || req.expires_at_ns-now>600_000_000_000{return Err(Error::Expired);}
     // Validate against registered state exactly as evaluate would, so the measured
     // phases describe a request that would actually be accepted.
     let schema=read(|s|s.engine.schemas.get(&req.schema_hash).cloned()).ok_or(Error::NotFound)?;
     read(|s|{
+        check_schema_mapping(s,&req.schema_hash)?;
         if req.model!=s.engine.active_model{return Err(Error::BindingMismatch);}
         if let Some(id)=req.calibration{
             let c=s.engine.calibrations.get(&id).ok_or(Error::Uncalibrated)?;
@@ -119,6 +133,8 @@ fn evaluate(req:DecisionRequest)->Result<Receipt>{
     if req.state.is_empty() || req.state.len()>MAX_STATE_BYTES{return Err(Error::TooLong);}
     // A reserve for administration/recovery; this is not a cycles-per-decision benchmark.
     if ic_cdk::api::canister_cycle_balance()<100_000_000_000 {return Err(Error::Capacity);}
+    #[cfg(feature="candle")]
+    read(|s|check_schema_mapping(s,&req.schema_hash))?;
     let start=ic_cdk::api::instruction_counter();
     mutate(|s|{
         let cached=s.engine.cache.contains_key(&(caller,req.evaluation_id));
@@ -153,7 +169,7 @@ fn begin_upload(manifest:Vec<u8>,tokenizer_length:u64,special:SpecialTokens)->Re
         if tokenizer_length==0 || tokenizer_length>32*1024*1024{return Err(Error::TooLong);}
         let bundle=hash(&manifest);
         // No second active model is retained during replacement.
-        MODEL.with(|x|*x.borrow_mut()=None);BUILDER.with(|x|*x.borrow_mut()=None);TOKENIZER.with(|x|*x.borrow_mut()=None);
+        INFERENCE.with(|x|*x.borrow_mut()=None);MODEL.with(|x|*x.borrow_mut()=None);BUILDER.with(|x|*x.borrow_mut()=None);TOKENIZER.with(|x|*x.borrow_mut()=None);
         mutate(|s|{s.fixture_mode=false;s.upload=Some(Upload{manifest,tokenizer_length,model_length:m.total_bytes,received:0,special});Ok(bundle)})
     }
     #[cfg(not(feature="candle"))]
@@ -187,7 +203,7 @@ fn start_warmup()->Result<u64>{
         if hash(&bytes)!=builder.manifest.tokenizer_sha256{return Err(Error::BindingMismatch);}
         let tok=hf_tokenizer::HfTokenizer::from_bytes(&bytes,u.special)?;
         let count=builder.manifest.tensors.len() as u64;
-        MODEL.with(|x|*x.borrow_mut()=None);TOKENIZER.with(|x|*x.borrow_mut()=Some(tok));BUILDER.with(|x|*x.borrow_mut()=Some(builder));Ok(count)
+        INFERENCE.with(|x|*x.borrow_mut()=None);MODEL.with(|x|*x.borrow_mut()=None);TOKENIZER.with(|x|*x.borrow_mut()=Some(tok));BUILDER.with(|x|*x.borrow_mut()=Some(builder));Ok(count)
     }
     #[cfg(not(feature="candle"))]
     {Err(Error::ModelUnavailable("Candle feature disabled".into()))}
@@ -212,5 +228,150 @@ fn warmup_next()->Result<bool>{
     #[cfg(not(feature="candle"))]
     {Err(Error::ModelUnavailable("Candle feature disabled".into()))}
 }
+#[cfg(feature="candle")]
+struct TokenJob { id:Digest,session:laya_candle::InferenceSession,instructions:u64,total:u32,last:Option<InferenceProgress> }
+#[derive(Clone,CandidType,Deserialize)]
+pub struct InferenceProgress { pub job:Digest,pub completed:u32,pub total:u32,pub logits:Option<Vec<f32>>,pub instructions:u64,pub cumulative_instructions:u64 }
+/// Start one owner-only, in-memory continuation; a new request replaces the old one.
+/// Upgrade drops it. The uploaded model remains in stable memory.
+#[ic_cdk::update]
+fn start_token_inference(input:TokenInput)->Result<InferenceProgress>{
+    owner()?;
+    #[cfg(feature="candle")]
+    {
+        let start=ic_cdk::api::instruction_counter();
+        let (session,total,bundle)=MODEL.with(|m|{
+            let m=m.borrow();let m=m.as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?;
+            Ok::<_,Error>((m.begin_inference(input.clone())?,m.inference_steps() as u32,m.bundle))
+        })?;
+        let now=ic_cdk::api::time();
+        let old=INFERENCE.with(|j|j.borrow().as_ref().map(|j|j.id));
+        let id=hash(&candid::encode_args((bundle,now,old,input)).map_err(|e|Error::Invalid(e.to_string()))?);
+        let instructions=ic_cdk::api::instruction_counter().saturating_sub(start);
+        INFERENCE.with(|j|*j.borrow_mut()=Some(TokenJob{id,session,instructions,total,last:None}));
+        Ok(InferenceProgress{job:id,completed:0,total,logits:None,instructions,cumulative_instructions:instructions})
+    }
+    #[cfg(not(feature="candle"))]
+    {let _=input;Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+/// expected_step makes retries harmless: a stale request cannot silently advance twice.
+#[ic_cdk::update]
+fn step_token_inference(job:Digest,expected_step:u32)->Result<InferenceProgress>{
+    owner()?;
+    #[cfg(feature="candle")]
+    {
+        let start=ic_cdk::api::instruction_counter();
+        INFERENCE.with(|j|{
+            let mut j=j.borrow_mut();let j=j.as_mut().ok_or(Error::NotFound)?;
+            if j.id!=job{return Err(Error::BindingMismatch);}
+            if expected_step.checked_add(1)==Some(j.session.completed_steps() as u32){
+                return j.last.clone().ok_or(Error::Transition);
+            }
+            if j.session.completed_steps()!=expected_step as usize{return Err(Error::BindingMismatch);}
+            let logits=MODEL.with(|m|m.borrow().as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?.step_inference(&mut j.session))?;
+            let instructions=ic_cdk::api::instruction_counter().saturating_sub(start);
+            j.instructions=j.instructions.saturating_add(instructions);
+            let result=InferenceProgress{job,completed:j.session.completed_steps() as u32,total:j.total,logits,instructions,cumulative_instructions:j.instructions};
+            j.last=Some(result.clone());Ok(result)
+        })
+    }
+    #[cfg(not(feature="candle"))]
+    {let _=(job,expected_step);Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+
+#[ic_cdk::query]
+fn token_inference_status()->Result<InferenceProgress>{
+    owner()?;
+    #[cfg(feature="candle")]
+    {INFERENCE.with(|j|{
+        let j=j.borrow();let j=j.as_ref().ok_or(Error::NotFound)?;
+        Ok(j.last.clone().unwrap_or(InferenceProgress{job:j.id,completed:0,total:j.total,logits:None,instructions:j.instructions,cumulative_instructions:j.instructions}))
+    })}
+    #[cfg(not(feature="candle"))]
+    {Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+
+#[derive(CandidType,Deserialize)]
+pub struct ProfileCost { pub name:String,pub shape:Vec<u64>,pub instructions:u64 }
+#[derive(CandidType,Deserialize)]
+pub struct ProfiledStep { pub progress:InferenceProgress,pub costs:Vec<ProfileCost> }
+#[ic_cdk::update]
+fn profile_token_step(job:Digest,expected_step:u32)->Result<ProfiledStep>{
+    owner()?;
+    #[cfg(feature="candle")]
+    {
+        let (progress,costs)=laya_candle::profile::capture(ic_cdk::api::instruction_counter,||step_token_inference(job,expected_step));
+        Ok(ProfiledStep{progress:progress?,costs:costs.into_iter().map(|c|ProfileCost{name:c.name,shape:c.shape.into_iter().map(|v|v as u64).collect(),instructions:c.instructions}).collect()})
+    }
+    #[cfg(not(feature="candle"))]
+    {let _=(job,expected_step);Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+
+/// Owner-only token-level inference, for model parity and cost validation.
+/// Does not issue a Receipt or authorize an executor action.
+#[derive(candid::CandidType, serde::Deserialize)]
+pub struct TokenInference { pub logits:Vec<f32>, pub instructions:u64 }
+#[ic_cdk::update]
+fn infer_tokens(input:TokenInput)->Result<TokenInference>{
+    owner()?;
+    #[cfg(feature="candle")]
+    {
+        use ic_laya_core::engine::InferenceBackend;
+        let start=ic_cdk::api::instruction_counter();
+        let logits=MODEL.with(|m|m.borrow_mut().as_mut().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?.infer(&input))?;
+        Ok(TokenInference{logits,instructions:ic_cdk::api::instruction_counter().saturating_sub(start)})
+    }
+    #[cfg(not(feature="candle"))]
+    {let _=input;Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
 ic_cdk::export_candid!();
 pub fn candid_interface()->String{__export_service()}
+
+#[cfg(all(test,feature="candle"))]
+mod tests {
+    use super::*;
+    use ic_laya_core::{demo::{actor,schemas},schema::TextTokenizer};
+
+    fn state()->Persistent {
+        let manifest=include_bytes!("../../../fixtures/tiny-int8-prenorm/manifest.json").to_vec();
+        Persistent{owner:actor(1),engine:EngineState::new(hash(&manifest)),fixture_mode:false,
+            upload:Some(Upload{manifest,tokenizer_length:1,model_length:1,received:2,
+                special:FixtureTokenizer.special_tokens()})}
+    }
+
+    #[test]
+    fn allowed_inference_caller_is_not_a_profiling_owner() {
+        let mut s=state();
+        s.engine.allow_caller(actor(2),1).unwrap();
+        assert_eq!(check_owner(&s,actor(2)),Err(Error::Unauthorized));
+        assert_eq!(check_owner(&s,Principal::anonymous()),Err(Error::Unauthorized));
+        assert_eq!(check_owner(&s,s.owner),Ok(()));
+    }
+
+    #[test]
+    fn model_replacement_rejects_stale_qtype_mapping() {
+        let mut s=state();
+        let mut manifest=laya_candle::pack::Manifest::parse(&s.upload.as_ref().unwrap().manifest).unwrap();
+        let schema=schemas().remove(0); // Noul: exercise a changed primitive mapping.
+        let compiled=schema::compile(schema.clone(),&FixtureTokenizer,manifest.primitive_to_qtype[1]).unwrap();
+        let id=compiled.schema_hash;
+        s.engine.register(compiled).unwrap();
+        assert_eq!(check_schema_mapping(&s,&id),Ok(()));
+        manifest.primitive_to_qtype.swap(1,2);
+        let raw=serde_json::to_vec(&manifest).unwrap();
+        s.engine.active_model=hash(&raw);
+        s.upload.as_mut().unwrap().manifest=raw;
+        assert_eq!(check_schema_mapping(&s,&id),Err(Error::BindingMismatch));
+        // A new schema version can be registered using the new model's mapping.
+        let mut revised=schema;
+        revised.version+=1;
+        let compiled=schema::compile(revised,&FixtureTokenizer,manifest.primitive_to_qtype[1]).unwrap();
+        let revised_id=compiled.schema_hash;
+        s.engine.register(compiled).unwrap();
+        assert_eq!(check_schema_mapping(&s,&revised_id),Ok(()));
+        s.engine.active_model=[0;32];
+        assert_eq!(check_schema_mapping(&s,&revised_id),Err(Error::BindingMismatch));
+        s.fixture_mode=true;
+        assert_eq!(check_schema_mapping(&s,&id),Ok(()));
+    }
+}

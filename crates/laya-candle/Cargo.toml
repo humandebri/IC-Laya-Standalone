@@ -9,3 +9,8 @@ candle-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 [dev-dependencies]
+
+[[example]]
+name = "int8-wasm-check"
+crate-type = ["cdylib"]
+test = false

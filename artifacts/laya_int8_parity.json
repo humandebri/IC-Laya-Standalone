@@ -1,0 +1,114 @@
+{
+  "cases": [
+    {
+      "case": "noul",
+      "primitive": "noul",
+      "tokens": 45,
+      "input": "artifacts/laya-noul-input.json",
+      "upstream": [
+        -1.853800892829895,
+        0.25558552145957947
+      ],
+      "f32": [
+        -1.853799819946289,
+        0.2555854916572571
+      ],
+      "f32_max_abs_error": 1.0728836059570312e-06,
+      "f32_argmax_matches": true,
+      "int8": [
+        -1.8883908987045288,
+        0.22898072004318237
+      ],
+      "int8_max_abs_error": 0.03459000587463379,
+      "int8_argmax_matches": true
+    },
+    {
+      "case": "choice",
+      "primitive": "choice",
+      "tokens": 38,
+      "input": "artifacts/laya-choice-input.json",
+      "upstream": [
+        1.997381329536438,
+        -1.8176802396774292,
+        0.5957201719284058
+      ],
+      "f32": [
+        1.9973804950714111,
+        -1.817680835723877,
+        0.5957152843475342
+      ],
+      "f32_max_abs_error": 4.887580871582031e-06,
+      "f32_argmax_matches": true,
+      "int8": [
+        2.021448850631714,
+        -1.8502533435821533,
+        0.6158352494239807
+      ],
+      "int8_max_abs_error": 0.03257310390472412,
+      "int8_argmax_matches": true
+    },
+    {
+      "case": "score",
+      "primitive": "score",
+      "tokens": 37,
+      "input": "artifacts/laya-score-input.json",
+      "upstream": [
+        -1.4444446563720703,
+        -0.023136451840400696,
+        2.2648820877075195
+      ],
+      "f32": [
+        -1.4444422721862793,
+        -0.0231359601020813,
+        2.2648794651031494
+      ],
+      "f32_max_abs_error": 2.6226043701171875e-06,
+      "f32_argmax_matches": true,
+      "int8": [
+        -1.5853283405303955,
+        -0.07195968925952911,
+        2.234219551086426
+      ],
+      "int8_max_abs_error": 0.1408836841583252,
+      "int8_argmax_matches": true
+    },
+    {
+      "case": "choice-128",
+      "primitive": "choice",
+      "tokens": 128,
+      "input": "artifacts/laya-choice-128-input.json",
+      "upstream": [
+        1.5999341011047363,
+        -2.2893030643463135,
+        -0.1388971358537674
+      ],
+      "f32": [
+        1.5999339818954468,
+        -2.2893028259277344,
+        -0.1388959139585495
+      ],
+      "f32_max_abs_error": 1.2218952178955078e-06,
+      "f32_argmax_matches": true,
+      "int8": [
+        1.5429234504699707,
+        -2.334920644760132,
+        -0.0891377180814743
+      ],
+      "int8_max_abs_error": 0.057010650634765625,
+      "int8_argmax_matches": true
+    }
+  ],
+  "quality_benchmark": false,
+  "measured_at": "2026-09-22T11:48:45.753614+00:00",
+  "source_repo": "convaiinnovations/laya-typed-decisions",
+  "source_revision": "f9ab0b228f0fc0f14d873dbc99038f135c2da1b2",
+  "upstream_common_sha256": "f948ee606abe2ed2463f830c051f1a60dccc1b9f5ca1fdc15635cfcbe0cff7b2",
+  "packages": {
+    "torch": "2.14.0",
+    "transformers": "5.17.0",
+    "safetensors": "0.8.0",
+    "numpy": "2.4.6"
+  },
+  "f32_bundle_sha256": "b619b84bd230e25f523a440019f182cdadc9eee84982412760838174872b74c2",
+  "int8_bundle_sha256": "bb70b3f0f2806bef5d4b670f44bb606892067fc0ebd928bd682b98ebdb2dc092"
+}

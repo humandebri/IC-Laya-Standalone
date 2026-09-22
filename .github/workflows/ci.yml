@@ -39,6 +39,11 @@ jobs:
       - run: bash tools/build_one.sh mock-ledger
       # This is a required check, not continue-on-error. Incompatibility must surface.
       - run: IC_LAYA_CANDLE=1 bash tools/build_one.sh decision-engine
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: cargo build --release --target wasm32-unknown-unknown -p laya-candle --example int8-wasm-check --locked
+      - run: node tools/check_int8_wasm.mjs target/wasm32-unknown-unknown/release/examples/int8_wasm_check.wasm
       - uses: actions/upload-artifact@v4
         if: always()
         with:

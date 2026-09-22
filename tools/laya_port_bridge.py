@@ -144,9 +144,9 @@ def safetensors_header(source: str | Path) -> dict:
 def translate_config(upstream: dict, agent: dict) -> dict:
     """Map upstream ModernBERT+Laya config onto IC-Laya's ModelConfig fields."""
     rope = upstream["rope_parameters"]
-    # `hidden_activation` is the encoder MLP activation; the decision head's
-    # activation is not separately named upstream, and upstream defaults to GELU.
-    activation = str(upstream.get("hidden_activation", "gelu")).capitalize()
+    # Laya DecisionModel constructs TransformerEncoderLayer without activation:
+    # PyTorch defaults to ReLU. ModernBERT's GELU does not configure this head.
+    activation = "Relu"
     canonical = {
         "vocab_size": upstream["vocab_size"],
         "hidden_size": upstream["hidden_size"],
@@ -343,7 +343,7 @@ def main() -> int:
             out=out / "pack",
             repo=REPO,
             revision=REVISION,
-            qtypes=[0, 1, 2],
+            qtypes=[0, 2, 1],
             test_only=False,
         )
         print(json.dumps({"pack_tensors": len(manifest["tensors"]), "pack_bytes": manifest["total_bytes"]}, indent=2))

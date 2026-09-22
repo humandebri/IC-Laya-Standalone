@@ -1,17 +1,50 @@
+# Rust build output. Keep Cargo.lock and small synthetic fixture model.bin files.
 /target/
 /build/
+
+# Local IC state and identities.
 /.dfx/
-/.venv/
-/checkpoints/
-# Downloaded checkpoints and scratch ICP homes. Large binaries that must never be
-# committed: models/verdict-151m is a 540 MB safetensors file.
-/models/
+/.icp/
 /.icphome/
+*.pem
+*.key
+
+# Downloaded model weights and upstream reference snapshots.
+/checkpoints/
+/models/
+/.cache/
+
 # Sized synthetic packs for perf measurement. Regenerable in seconds via
 # `python tools/generate_fixtures.py --tier <name>`; measure-m alone is 81 MiB.
 /fixtures/measure-*/
-# icp-cli local network state: replica cache and canister id mappings.
-/.icp/
+
+# Python environments, caches and coverage output.
+/.venv/
+/venv/
 __pycache__/
-*.pyc
-# Cargo.lock is intentionally NOT ignored. Generate, review, and commit it.
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+/htmlcov/
+
+# Local environment values; retain shareable templates.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+
+# New raw execution logs. Keep artifacts/*.json as reproducible measurement evidence.
+# Already tracked historical logs remain tracked.
+/artifacts/**/*.log
+
+# macOS metadata and editor temporary files.
+.DS_Store
+._*
+*.swp
+*.swo
+*~

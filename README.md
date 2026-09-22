@@ -1,6 +1,6 @@
 # IC-Laya — 独立開発リポジトリ
 
-Layaを実checkpointで動作検証し、ICP上での実行を目指す独立した実装です。
+Layaの実checkpointをF32/W8A8で読み込み、ICP canisterで推論する独立した実装です。
 IC-Verdict（openJev）との共有workspace・path依存・submoduleはありません。
 
 ## 出発点と検証状態
@@ -8,9 +8,13 @@ IC-Verdict（openJev）との共有workspace・path依存・submoduleはあり�
 - 2026-09-22に `humandebri/IC-Verdict` のopenJev導入前コミット
   `e701ad2ffcaee3070239996bf5178b74b009c1d8` からソースを切り出しました。
 - Git履歴・remote・ローカルcanister状態・モデルweight・ビルド生成物は引き継いでいません。
-- 以下の文書と `artifacts/` は切り出し元の記録です。このリポジトリでの再検証結果ではありません。
-- 実Laya checkpointの読み込み、参照実装との一致、ICP上の実モデル推論は未検証です。
-- 最初に実checkpointのnative推論を確認し、その後canisterの命令数・heapを測定します。
+- int8の詳細計測と最適化: [INT8_PERFORMANCE.md](docs/INT8_PERFORMANCE.md)。128-tokenの命令数を57%削減しました。
+- 今回のint8実装・検証は [docs/INT8.md](docs/INT8.md)。`artifacts/laya_int8_parity.json` と
+  `artifacts/int8_*` がこの独立環境での新しい実測記録です。
+- 実checkpointのF32は上流と4入力で最大logit誤差4.89e-6。int8は最大0.141、argmax 4/4一致。
+- 実モデルの128-token一括updateは命令上限を超えるため、owner向けに層ごとの継続推論APIを追加しました。
+  `tools/canister_infer.py --stepped` で実行します。品質・校正・mainnet運用の合格を意味しません。
+- 以下のv0.2本文と旧artifactsは切り出し元の履歴です。現在の検証状態は上記文書を参照してください。
 - 元コミット以降のIC-Verdict側の修正・最適化は含みません。
 
 ---

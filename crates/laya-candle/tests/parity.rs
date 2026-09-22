@@ -54,3 +54,129 @@ fn profiled_inference_matches_plain_inference(){
         }
     }
 }
+
+#[test]
+fn int8_pack_tracks_f32_for_all_fixture_cases() {
+    for suffix in ["prenorm", "postnorm"] {
+        let d = dir(&format!("tiny-{suffix}"));
+        let mut float = laya_candle::pack::load_directory(&d).unwrap();
+        let mut quant = laya_candle::pack::load_directory(&dir(&format!("tiny-int8-{suffix}"))).unwrap();
+        let cases: serde_json::Value = serde_json::from_slice(&std::fs::read(d.join("cases.json")).unwrap()).unwrap();
+        for case in cases.as_array().unwrap() {
+            let input: TokenInput = serde_json::from_value(case["input"].clone()).unwrap();
+            let expected = float.infer(&input).unwrap();
+            let actual = quant.infer(&input).unwrap();
+            assert_eq!(expected.len(), actual.len());
+            for (a, b) in actual.iter().zip(&expected) {
+                assert!((a-b).abs() < 0.002, "{suffix}: int8 {a} vs f32 {b}");
+            }
+        }
+    }
+}
+
+#[test]
+fn int8_manifest_and_scales_are_validated() {
+    use laya_candle::pack::{Builder, Manifest};
+    let d = dir("tiny-int8-prenorm");
+    let raw = std::fs::read(d.join("manifest.json")).unwrap();
+    let all = std::fs::read(d.join("model.bin")).unwrap();
+    let mut manifest = Manifest::parse(&raw).unwrap();
+    manifest.format = "ic-laya-f32-pack-v1".into();
+    assert!(manifest.validate().is_err());
+    let mut b = Builder::new(&raw).unwrap();
+    while let Some(e) = b.next_entry().cloned() {
+        let bytes = &all[e.offset as usize..(e.offset+e.length) as usize];
+        if e.storage == laya_candle::pack::Storage::I8Row {
+            let mut broken = bytes.to_vec();
+            broken[0] ^= 1;
+            assert!(b.push(&broken).is_err());
+            break;
+        }
+        b.push(bytes).unwrap();
+    }
+    for scale in [0f32, -1., f32::NAN, f32::INFINITY] {
+        let mut raw = vec![1u8; 17];
+        raw.extend(scale.to_le_bytes());
+        assert!(laya_candle::int8::Int8Matrix::from_bytes(&raw, 1, 17).is_err());
+    }
+}
+
+#[test]
+fn int8_integer_dot_handles_tail_sign_zero_and_max_width() {
+    use candle_core::{Device, Tensor};
+    for width in [1, 15, 16, 17, 33, 16384] {
+        let mut bytes: Vec<u8> = (0..width).map(|i| if i % 2 == 0 { 127u8 } else { (-128i8) as u8 }).collect();
+        bytes.extend(0.25f32.to_le_bytes());
+        let w = laya_candle::int8::Int8Matrix::from_bytes(&bytes, 1, width).unwrap();
+        let row: Vec<f32> = (0..width).map(|i| if i % 2 == 0 { 127. } else { -127. }).collect();
+        let expected: i32 = row.iter().zip(&bytes).map(|(a,b)| *a as i32 * (*b as i8) as i32).sum();
+        let mut input = row;
+        input.extend(vec![0.; width]);
+        let x = Tensor::from_vec(input, (2, width), &Device::Cpu).unwrap();
+        assert_eq!(w.forward(&x).unwrap().flatten_all().unwrap().to_vec1::<f32>().unwrap(), vec![expected as f32 * 0.25, 0.]);
+        let bad = Tensor::from_vec(vec![f32::NAN; width], (1, width), &Device::Cpu).unwrap();
+        assert!(w.forward(&bad).is_err());
+    }
+}
+
+#[test]
+fn stepped_inference_is_identical_and_bound_to_the_pack() {
+    for suffix in ["prenorm", "postnorm", "int8-prenorm", "int8-postnorm"] {
+        let d = dir(&format!("tiny-{suffix}"));
+        let mut model = laya_candle::pack::load_directory(&d).unwrap();
+        let input: TokenInput = serde_json::from_slice(&std::fs::read(d.join("input.json")).unwrap()).unwrap();
+        let expected = model.infer(&input).unwrap();
+        let mut session = model.begin_inference(input).unwrap();
+        for step in 0..model.inference_steps() {
+            assert_eq!(session.completed_steps(), step);
+            let result = model.step_inference(&mut session).unwrap();
+            if step + 1 == model.inference_steps() { assert_eq!(result.unwrap(), expected); }
+            else { assert!(result.is_none()); }
+        }
+        assert!(matches!(model.step_inference(&mut session), Err(Error::Transition)));
+        model.bundle[0] ^= 1;
+        assert!(matches!(model.step_inference(&mut session), Err(Error::BindingMismatch)));
+    }
+}
+
+#[test]
+fn detailed_profile_is_observation_only() {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static TICK: AtomicU64 = AtomicU64::new(0);
+    fn counter() -> u64 { TICK.fetch_add(1, Ordering::Relaxed) }
+    let d = dir("tiny-int8-prenorm");
+    let mut model = laya_candle::pack::load_directory(&d).unwrap();
+    let input: TokenInput = serde_json::from_slice(&std::fs::read(d.join("input.json")).unwrap()).unwrap();
+    let expected = model.infer(&input).unwrap();
+    let (result, costs) = laya_candle::profile::capture(counter, || model.infer(&input));
+    assert_eq!(result.unwrap(), expected);
+    assert!(costs.iter().any(|c| c.name == "int8.matmul"));
+    assert!(costs.iter().any(|c| c.name == "attention.qk"));
+    assert!(costs.iter().all(|c| c.instructions > 0));
+    let (_, costs) = laya_candle::profile::capture(counter, || ());
+    assert!(costs.is_empty());
+}
+
+#[test]
+fn tiled_int8_matches_integer_reference_including_all_tails() {
+    use candle_core::{Device, Tensor};
+    for cols in [1, 15, 16, 17, 31, 32, 33, 1024, 2624, 16384] {
+        for (tokens, rows) in [(3, 3), (4, 4), (5, 7), (8, 9)] {
+            let w: Vec<i8> = (0..rows*cols).map(|i| ((i*37+11)%256) as u8 as i8).collect();
+            let x: Vec<f32> = (0..tokens*cols).map(|i| (((i*19)%255) as i32-127) as f32).collect();
+            let mut bytes: Vec<u8> = w.iter().map(|v| *v as u8).collect();
+            for _ in 0..rows { bytes.extend(0.25f32.to_le_bytes()); }
+            let matrix = laya_candle::int8::Int8Matrix::from_bytes(&bytes, rows, cols).unwrap();
+            let tensor = Tensor::from_vec(x.clone(), (tokens, cols), &Device::Cpu).unwrap();
+            let actual = matrix.forward(&tensor).unwrap().to_vec2::<f32>().unwrap();
+            for t in 0..tokens {
+                let a=&x[t*cols..(t+1)*cols];
+                let scale=a.iter().fold(0f32,|a,b|a.max(b.abs()))/127.;
+                for r in 0..rows {
+                    let sum:i64=a.iter().zip(&w[r*cols..(r+1)*cols]).map(|(a,b)| (a/scale).round().clamp(-127.,127.) as i64 * *b as i64).sum();
+                    assert_eq!(actual[t][r],sum as f32*scale*0.25,"T={tokens} O={rows} K={cols}");
+                }
+            }
+        }
+    }
+}

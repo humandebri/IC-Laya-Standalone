@@ -34,7 +34,8 @@ pub fn compile<T:TextTokenizer>(s:Schema,t:&T,qtype_id:u32)->Result<CompiledSche
     let mut prefix=vec![special.cls]; prefix.extend(instruction_ids);prefix.push(special.sep);
     let mut markers=Vec::new();
     for o in &s.options {
-        let ids=t.encode_piece(&o.text)?;
+        // Laya trains byte-level BPE options with a leading space after [MASK].
+        let ids=t.encode_piece(&format!(" {}",o.text))?;
         if ids.is_empty() || ids.len()>48 {return Err(Error::TooLong);}
         if control(&ids,&special){return Err(Error::Invalid("option control token".into()));}
         markers.push(prefix.len() as u32);prefix.push(special.mask);prefix.extend(ids);

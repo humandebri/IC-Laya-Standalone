@@ -118,3 +118,23 @@ fn typed_view_rejects_forged_receipt_stamp() {
     let mut expected=receipt.stamp.clone();expected.model=hash(b"expected-other-model");
     assert!(ic_laya_core::sdk::Score::<RiskSchema>::try_from_receipt(schema,receipt,&expected).is_err());
 }
+
+#[test]
+fn option_tokenization_matches_laya_leading_space() {
+    struct Recording(std::cell::RefCell<Vec<String>>);
+    impl TextTokenizer for Recording {
+        fn encode_piece(&self, text: &str) -> Result<Vec<u32>> {
+            self.0.borrow_mut().push(text.to_owned());
+            FixtureTokenizer.encode_piece(text)
+        }
+        fn fingerprint(&self) -> Digest { FixtureTokenizer.fingerprint() }
+        fn special_tokens(&self) -> SpecialTokens { FixtureTokenizer.special_tokens() }
+    }
+    let tokenizer = Recording(Default::default());
+    let schema = schemas()[1].clone();
+    compile(schema.clone(), &tokenizer, 0).unwrap();
+    let calls = tokenizer.0.borrow();
+    for (text, option) in calls.iter().skip(1).zip(&schema.options) {
+        assert_eq!(text, &format!(" {}", option.text));
+    }
+}
