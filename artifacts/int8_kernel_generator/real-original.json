@@ -1,0 +1,1033 @@
+{
+  "variant": "original",
+  "module_hash": "0x0298b36221d5676f7721640b56f15ad7bd7cb81b765fba1f9c88333494007030",
+  "bundle_sha256": "bb70b3f0f2806bef5d4b670f44bb606892067fc0ebd928bd682b98ebdb2dc092",
+  "corpus_sha256": "aa75a7c811ab4a5698dcb6d8fc9d65440889bf0a98d3ff59bf6f8ae279b3370f",
+  "measured_at": "2026-09-25T14:18:16.233059+00:00",
+  "cases": [
+    {
+      "id": "choice-natural-00",
+      "tokens": 44,
+      "instructions": 13112586073,
+      "logits": [
+        1.7130183,
+        -2.230556,
+        0.44230524
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-01",
+      "tokens": 42,
+      "instructions": 12547343674,
+      "logits": [
+        -1.6774145,
+        -0.78685236,
+        0.7434696
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-02",
+      "tokens": 38,
+      "instructions": 11380009283,
+      "logits": [
+        -1.4436922,
+        0.2864263,
+        1.1274356
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-03",
+      "tokens": 43,
+      "instructions": 13082077556,
+      "logits": [
+        -2.0198948,
+        -0.035053194,
+        -0.098879
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-04",
+      "tokens": 40,
+      "instructions": 11741531004,
+      "logits": [
+        -0.7286611,
+        -0.5120474,
+        1.0022585
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-05",
+      "tokens": 40,
+      "instructions": 11738749425,
+      "logits": [
+        -1.688051,
+        -2.8429694,
+        -0.2195123
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-06",
+      "tokens": 42,
+      "instructions": 12545847519,
+      "logits": [
+        -1.2826577,
+        0.30697906,
+        1.3830675
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-07",
+      "tokens": 43,
+      "instructions": 13082986736,
+      "logits": [
+        0.43670917,
+        -0.6296352,
+        0.8637319
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-08",
+      "tokens": 40,
+      "instructions": 11750397528,
+      "logits": [
+        -2.6221147,
+        -0.43443108,
+        1.978673
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-09",
+      "tokens": 40,
+      "instructions": 11734593477,
+      "logits": [
+        -0.18454261,
+        -0.91283506,
+        1.0286278
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-10",
+      "tokens": 42,
+      "instructions": 12547775540,
+      "logits": [
+        -2.677568,
+        -2.1528404,
+        -0.17154552
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-11",
+      "tokens": 42,
+      "instructions": 12543607041,
+      "logits": [
+        -0.95652145,
+        -0.3451166,
+        0.05907891
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-12",
+      "tokens": 37,
+      "instructions": 11038119200,
+      "logits": [
+        -0.9309317,
+        -0.64275986,
+        0.5626713
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-13",
+      "tokens": 39,
+      "instructions": 11711852921,
+      "logits": [
+        -1.1925107,
+        -0.9085826,
+        1.6029379
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-14",
+      "tokens": 40,
+      "instructions": 11742589880,
+      "logits": [
+        0.48671526,
+        -1.1945363,
+        1.2232683
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-15",
+      "tokens": 41,
+      "instructions": 12211473471,
+      "logits": [
+        -2.541363,
+        -1.7496555,
+        0.9359103
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-16",
+      "tokens": 40,
+      "instructions": 11738860283,
+      "logits": [
+        -2.922528,
+        -0.80226547,
+        1.0218618
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-17",
+      "tokens": 39,
+      "instructions": 11707833867,
+      "logits": [
+        -0.71591586,
+        -1.9714196,
+        0.6870694
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-18",
+      "tokens": 42,
+      "instructions": 12545717317,
+      "logits": [
+        0.24367738,
+        -0.30380392,
+        1.7890362
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-19",
+      "tokens": 41,
+      "instructions": 12212974849,
+      "logits": [
+        -2.2227862,
+        -0.041933164,
+        1.3473562
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-20",
+      "tokens": 39,
+      "instructions": 11705653059,
+      "logits": [
+        -1.5647134,
+        -1.9037528,
+        0.5714981
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-21",
+      "tokens": 41,
+      "instructions": 12208122882,
+      "logits": [
+        -0.02282437,
+        0.06910928,
+        1.2587292
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-22",
+      "tokens": 41,
+      "instructions": 12207794719,
+      "logits": [
+        -2.199033,
+        -0.33356538,
+        0.67413646
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-23",
+      "tokens": 44,
+      "instructions": 13106861171,
+      "logits": [
+        -1.9138536,
+        -0.31842393,
+        -0.5835483
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-35",
+      "tokens": 35,
+      "instructions": 10558080767,
+      "logits": [
+        0.9719198,
+        -0.76055354,
+        1.4565529
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-63",
+      "tokens": 63,
+      "instructions": 18580415017,
+      "logits": [
+        1.2588612,
+        -2.1272266,
+        0.6711373
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-64",
+      "tokens": 64,
+      "instructions": 18609304537,
+      "logits": [
+        1.193822,
+        -2.239922,
+        0.5372669
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-65",
+      "tokens": 65,
+      "instructions": 19103771471,
+      "logits": [
+        1.1216102,
+        -2.2893438,
+        0.7973532
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-96",
+      "tokens": 96,
+      "instructions": 28802043454,
+      "logits": [
+        1.0181341,
+        -1.4883227,
+        0.88033146
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-112",
+      "tokens": 112,
+      "instructions": 34228634170,
+      "logits": [
+        1.0288358,
+        -1.6918596,
+        0.3423704
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "choice-boundary-127",
+      "tokens": 127,
+      "instructions": 39270646195,
+      "logits": [
+        0.9948462,
+        -1.4919124,
+        0.2790797
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "choice-boundary-128",
+      "tokens": 128,
+      "instructions": 39283922912,
+      "logits": [
+        0.99742746,
+        -1.5374423,
+        0.32783198
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "noul-natural-00",
+      "tokens": 51,
+      "instructions": 15432938109,
+      "logits": [
+        -1.6521304,
+        0.20382941
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-01",
+      "tokens": 49,
+      "instructions": 14550462234,
+      "logits": [
+        3.2810984,
+        -0.79103005
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-02",
+      "tokens": 45,
+      "instructions": 13583298632,
+      "logits": [
+        2.7696939,
+        -0.45842993
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-03",
+      "tokens": 50,
+      "instructions": 14895219754,
+      "logits": [
+        3.4385066,
+        -0.80499595
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-04",
+      "tokens": 47,
+      "instructions": 14048762879,
+      "logits": [
+        1.7536916,
+        -0.12430838
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-05",
+      "tokens": 47,
+      "instructions": 14053823502,
+      "logits": [
+        5.0990334,
+        -0.8872024
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-06",
+      "tokens": 49,
+      "instructions": 14547441288,
+      "logits": [
+        3.0736644,
+        -0.6004768
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-07",
+      "tokens": 50,
+      "instructions": 14884473175,
+      "logits": [
+        0.41847903,
+        0.12778266
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-08",
+      "tokens": 47,
+      "instructions": 14054551634,
+      "logits": [
+        2.622223,
+        -0.47473738
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-09",
+      "tokens": 47,
+      "instructions": 14049690673,
+      "logits": [
+        3.231652,
+        -0.70953333
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-10",
+      "tokens": 49,
+      "instructions": 14556055896,
+      "logits": [
+        4.595894,
+        -0.71176535
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-11",
+      "tokens": 49,
+      "instructions": 14547125725,
+      "logits": [
+        2.9100676,
+        -0.53943413
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-12",
+      "tokens": 44,
+      "instructions": 13103238411,
+      "logits": [
+        3.2436616,
+        -0.7002854
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-13",
+      "tokens": 46,
+      "instructions": 13918352896,
+      "logits": [
+        2.1560204,
+        -0.3945192
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-14",
+      "tokens": 47,
+      "instructions": 14048734202,
+      "logits": [
+        1.0306568,
+        -0.043776136
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-15",
+      "tokens": 48,
+      "instructions": 14072252329,
+      "logits": [
+        4.6015425,
+        -0.81021637
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-16",
+      "tokens": 47,
+      "instructions": 14056301468,
+      "logits": [
+        5.2867255,
+        -0.6706205
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-17",
+      "tokens": 46,
+      "instructions": 13918854553,
+      "logits": [
+        3.3552115,
+        -0.7923464
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-18",
+      "tokens": 49,
+      "instructions": 14540582934,
+      "logits": [
+        0.396092,
+        0.08861421
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-19",
+      "tokens": 48,
+      "instructions": 14063507713,
+      "logits": [
+        1.295471,
+        -0.041610543
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-20",
+      "tokens": 46,
+      "instructions": 13918829219,
+      "logits": [
+        4.359547,
+        -0.68029207
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-21",
+      "tokens": 48,
+      "instructions": 14064187682,
+      "logits": [
+        1.9656343,
+        -0.12906995
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-22",
+      "tokens": 48,
+      "instructions": 14067573572,
+      "logits": [
+        2.982392,
+        -0.61707973
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-23",
+      "tokens": 51,
+      "instructions": 15440346148,
+      "logits": [
+        7.163976,
+        -0.67999
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-35",
+      "tokens": 35,
+      "instructions": 10549552011,
+      "logits": [
+        2.482936,
+        -0.4794719
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-63",
+      "tokens": 63,
+      "instructions": 18568072035,
+      "logits": [
+        -1.6627563,
+        0.21845359
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-64",
+      "tokens": 64,
+      "instructions": 18597470789,
+      "logits": [
+        -1.6044564,
+        0.21646312
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-65",
+      "tokens": 65,
+      "instructions": 19094405686,
+      "logits": [
+        -1.7151856,
+        0.23989561
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-96",
+      "tokens": 96,
+      "instructions": 28786897470,
+      "logits": [
+        -1.4141423,
+        0.17483164
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-112",
+      "tokens": 112,
+      "instructions": 34213586354,
+      "logits": [
+        -1.2856212,
+        0.14659032
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "noul-boundary-127",
+      "tokens": 127,
+      "instructions": 39257231708,
+      "logits": [
+        -1.2190472,
+        0.141584
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "noul-boundary-128",
+      "tokens": 128,
+      "instructions": 39265906493,
+      "logits": [
+        -1.4370568,
+        0.17439447
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "score-natural-00",
+      "tokens": 43,
+      "instructions": 13085315384,
+      "logits": [
+        -1.7443765,
+        0.22744346,
+        1.6963248
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-01",
+      "tokens": 41,
+      "instructions": 12210824082,
+      "logits": [
+        0.18225169,
+        1.1747382,
+        0.6161856
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-02",
+      "tokens": 37,
+      "instructions": 11043185473,
+      "logits": [
+        -1.1644039,
+        0.30404416,
+        1.4927663
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-03",
+      "tokens": 42,
+      "instructions": 12545509612,
+      "logits": [
+        0.81520873,
+        1.627126,
+        0.6820923
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-04",
+      "tokens": 39,
+      "instructions": 11707510361,
+      "logits": [
+        -0.69650376,
+        1.2076973,
+        1.4809384
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-05",
+      "tokens": 39,
+      "instructions": 11703367718,
+      "logits": [
+        0.095364854,
+        1.5672108,
+        1.1041104
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-06",
+      "tokens": 41,
+      "instructions": 12207446486,
+      "logits": [
+        0.15506557,
+        1.0060964,
+        0.8020086
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-07",
+      "tokens": 42,
+      "instructions": 12547699980,
+      "logits": [
+        -0.044958204,
+        1.1375039,
+        1.1704532
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-08",
+      "tokens": 39,
+      "instructions": 11713748331,
+      "logits": [
+        0.5685798,
+        0.17345382,
+        1.6280417
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-09",
+      "tokens": 39,
+      "instructions": 11700999565,
+      "logits": [
+        -0.30784786,
+        1.0102074,
+        1.2930557
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-10",
+      "tokens": 41,
+      "instructions": 12209753362,
+      "logits": [
+        0.25155827,
+        1.2378428,
+        0.9456325
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-11",
+      "tokens": 41,
+      "instructions": 12206842075,
+      "logits": [
+        0.11051108,
+        0.9699335,
+        0.3130839
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-12",
+      "tokens": 36,
+      "instructions": 10575822680,
+      "logits": [
+        -0.640878,
+        1.0785666,
+        1.1717006
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-13",
+      "tokens": 38,
+      "instructions": 11379422400,
+      "logits": [
+        -0.6065203,
+        0.9345586,
+        1.3273487
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-14",
+      "tokens": 39,
+      "instructions": 11707554406,
+      "logits": [
+        -0.041125234,
+        1.218029,
+        0.929282
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-15",
+      "tokens": 40,
+      "instructions": 11740131571,
+      "logits": [
+        -0.7452635,
+        1.0728133,
+        0.9265968
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-16",
+      "tokens": 39,
+      "instructions": 11704082991,
+      "logits": [
+        0.9571194,
+        1.7396268,
+        0.28492188
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-17",
+      "tokens": 38,
+      "instructions": 11376208292,
+      "logits": [
+        -0.96890104,
+        1.3178765,
+        1.4013352
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-18",
+      "tokens": 41,
+      "instructions": 12206734679,
+      "logits": [
+        0.10794306,
+        1.1861243,
+        1.3138543
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-19",
+      "tokens": 40,
+      "instructions": 11739932587,
+      "logits": [
+        -0.6908524,
+        0.7216819,
+        1.3507335
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-20",
+      "tokens": 38,
+      "instructions": 11371517997,
+      "logits": [
+        0.9817325,
+        1.6604977,
+        0.7502987
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-21",
+      "tokens": 40,
+      "instructions": 11736242162,
+      "logits": [
+        0.31542552,
+        1.5713116,
+        1.0050285
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-22",
+      "tokens": 40,
+      "instructions": 11738336472,
+      "logits": [
+        -0.42593035,
+        0.53488004,
+        1.1263572
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-23",
+      "tokens": 43,
+      "instructions": 13076910255,
+      "logits": [
+        0.844437,
+        0.6575104,
+        -0.092470646
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-35",
+      "tokens": 35,
+      "instructions": 10559534740,
+      "logits": [
+        -0.9407078,
+        -0.11303771,
+        2.1066523
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-63",
+      "tokens": 63,
+      "instructions": 18580229195,
+      "logits": [
+        -0.8534374,
+        0.77674985,
+        1.5364414
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-64",
+      "tokens": 64,
+      "instructions": 18610682996,
+      "logits": [
+        -1.1564655,
+        0.48120767,
+        1.4924234
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-65",
+      "tokens": 65,
+      "instructions": 19103367152,
+      "logits": [
+        -0.9343279,
+        0.85180444,
+        1.4891467
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-96",
+      "tokens": 96,
+      "instructions": 28803818677,
+      "logits": [
+        0.12042247,
+        1.393421,
+        1.4290649
+      ],
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-112",
+      "tokens": 112,
+      "instructions": 34228384602,
+      "logits": [
+        0.120289,
+        1.3216044,
+        1.3171325
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "score-boundary-127",
+      "tokens": 127,
+      "instructions": 39272210750,
+      "logits": [
+        -0.17765532,
+        1.1719671,
+        1.3276256
+      ],
+      "update_calls": 2
+    },
+    {
+      "id": "score-boundary-128",
+      "tokens": 128,
+      "instructions": 39283806579,
+      "logits": [
+        -0.20316152,
+        1.1227856,
+        1.4372214
+      ],
+      "update_calls": 2
+    }
+  ]
+}

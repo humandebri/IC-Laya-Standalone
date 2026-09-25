@@ -1,0 +1,43 @@
+# INT8行列積の命令数削減: カーネル生成と実モデル測定
+
+2026-09-25。W8A8の整数積を行う`dot_tile`の16バイトKループを生成器に移し、展開数を1・2・3・4・8・16で比較した。採用は**８回展開**。16回展開は命令数がさらに減ったが、Linux CIのWasmビルドが完了できなかったため比較候補に留める。ICの計上方式、モデルpack、量子化、積和順序、出力APIは変更していない。目的は現行の命令上限内で扱える入力長を伸ばすことであり、ノードCPU負荷については次段階で判断する。
+
+## 実モデルでの結果
+
+変更前と各候補を**同じソースの他の部分、同じRustツールチェーン、同じINT8 pack**からビルドした。別ポートの独立したlocal ICネットワークに403MiBのpackを一度アップロードし、各Wasmへのupgrade後に201 tensorをwarmupした。96入力は自然文24件×3 schemaと境界8件×3 schema。100 tokens超は既存の分割APIを使い、各入力で総命令数とlogitsを比較した。
+
+| Wasm | 96入力の命令数削減率・中央値 | 最小～最大 | logits最大絶対差 | 判定不一致 |
+|---|---:|---:|---:|---:|
+| **8回展開（採用）** | **5.613%** | **5.184～5.704%** | **0.0** | **0/96** |
+| 16回展開（CIビルド不可） | 6.304% | 6.136～6.658% | 0.0 | 0/96 |
+
+128-token Choice境界入力では、変更前**39,283,922,912**命令から採用した８回展開で**37,179,745,325**命令（5.357%減）。16回展開では36,820,406,517命令（6.271%減）だった。これでもqueryの5B命令上限には届かない。実モデルの生値は[変更前](../artifacts/int8_kernel_generator/real-original.json)、[8回展開](../artifacts/int8_kernel_generator/real-unroll8.json)、[16回展開](../artifacts/int8_kernel_generator/real-unroll16.json)。module SHA-256は順に`0298b36221d5676f7721640b56f15ad7bd7cb81b765fba1f9c88333494007030`、`a0fb59f29325aede13626148f3725196c1c58b53dcc2b164aac5e941c82bab35`、`b83b5d023d0027cb39704fbba3625a94ab7f2b52de12b30046b64810a4342d7e`。pack SHA-256はすべて`bb70b3f0f2806bef5d4b670f44bb606892067fc0ebd928bd682b98ebdb2dc092`。
+
+## 単体行列積と見送った案
+
+PocketIC v15.0.0のowner専用`benchmark_int8_kernel`を使い、各候補を別canisterにinstallした。同じ決定的なW8A8入力で各形状を準備1回・測定5回実行し、checksum一致を確認した。以下は変更前に対する16回展開の中央値。
+
+| tokens × 出力行 × K | 変更前 | 16回展開 | 削減率 |
+|---|---:|---:|---:|
+| 28 × 3072 × 1024 | 64,893,163 | 60,477,547 | 6.804% |
+| 128 × 3072 × 1024 | 274,433,287 | 252,597,127 | 7.957% |
+| 128 × 5248 × 1024 | 464,863,354 | 427,559,914 | 8.025% |
+| 128 × 1024 × 2624 | 230,635,527 | 212,917,383 | 7.682% |
+
+[全サンプル](../artifacts/int8_kernel_generator/pocketic-original-unroll16.json)には各呼び出しの命令数、checksum、壁時計時間、Wasm hashを保存した。８回展開は同じ３つの128-token形状で6.54～6.86%減だった（[全サンプル](../artifacts/int8_kernel_generator/pocketic-unroll2-4-8.json)）。入力i8をタイルごとにi16へ事前拡張して再利用する試行は、128-tokenの３形状で**0.20～1.59%増**となり撤回した（[全サンプル](../artifacts/int8_kernel_generator/pocketic-preexpanded-input.json)）。
+
+16回展開のWasmは7,352,703 bytes、gzip時1,867,382 bytes。Mac arm64でのreleaseビルドには3分18秒かかり、`rustc`の観測RSSは約8.2GBだった。８回展開のWasmは6,516,334 bytes。CIのLinux runnerでは16回展開のWasmビルドが約88秒後に終了コード143で停止した（GitHub Actions run 36191742651）。Rustコンパイルエラーは記録されていないが、同じジョブで他のWasmはビルドできており、16回展開のコンパイル資源消費が原因と考えられる。８回展開を選び、CI結果を確認する。
+
+この計測のPocketIC更新呼び出しの壁時計時間は、16回展開で元より長かった。８回展開も実ノードCPU負荷の改善は未検証である。たとえば128×3072×1024は約0.028→0.042秒。これはMac上の短い合成処理の値で、実ICノードのCPU負荷を表す測定ではない。命令数優先の候補として扱い、CPU時間と同時実行時のノード負荷は採用前にx86 Linuxで測る。
+
+## 再生成と再測定
+
+`tools/generate_int8_dot.py`が`crates/laya-candle/src/int8_dot_generated.rs`を決定的に生成する。通常ビルドはチェックイン済みファイルを使い、生成処理をcanister実行時に行わない。`int8.rs`は従来のRust ABIとタイル選択を維持する。
+
+```sh
+python3 tools/generate_int8_dot.py --check
+python3 tools/generate_int8_dot.py --unroll 16  # 比較候補を生成するとき
+IC_LAYA_CANDLE=1 tools/build_one.sh decision-engine
+```
+
+PocketIC比較は`python3 tools/benchmark_int8_candidates.py --variant baseline=BASELINE.wasm --variant candidate=CANDIDATE.wasm --output result.json`。必要なPython packagesは`pocket-ic==3.1.2`、`ic-py==1.0.1`、任意で`psutil`。`POCKET_IC_BIN`にはPocketIC実行ファイルを指定する。実モデル比較には独立localネットワークに同じpackをupload/warmupし、`tools/compare_int8_model_candidates.py --network-root ROOT --expected-wasm WASM --variant NAME --output result.json [--baseline baseline.json]`を使う。計測の詳細は各JSONのmodule hash・pack hash・corpus hashで照合する。
