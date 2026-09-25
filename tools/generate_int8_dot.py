@@ -90,7 +90,7 @@ def generate(unroll: int) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--unroll', type=int, choices=(1, 2, 3, 4, 6, 8, 16), default=16)
+    parser.add_argument('--unroll', type=int, choices=(1, 2, 3, 4, 6, 8, 16), default=8)
     parser.add_argument('--output', type=Path, default=OUT)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
