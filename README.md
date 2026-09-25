@@ -8,12 +8,19 @@ IC-Verdict（openJev）との共有workspace・path依存・submoduleはあり�
 - 2026-09-22に `humandebri/IC-Verdict` のopenJev導入前コミット
   `e701ad2ffcaee3070239996bf5178b74b009c1d8` からソースを切り出しました。
 - Git履歴・remote・ローカルcanister状態・モデルweight・ビルド生成物は引き継いでいません。
-- int8の詳細計測と最適化: [INT8_PERFORMANCE.md](docs/INT8_PERFORMANCE.md)。128-tokenの命令数を57%削減しました。
+- 最新のINT8最適化: [INT8_OPTIMIZATION_V4.md](docs/INT8_OPTIMIZATION_V4.md)。128-token Choiceは39.275B命令で、V3比8.33%削減。比較用96入力のlogits・判定はすべて一致。
+  [前回の測定](docs/INT8_OPTIMIZATION_V3.md)、
+  [F32書戻し](docs/INT8_F32_WRITEBACK.md)、[前段階の最適化](docs/INT8_OPTIMIZATION_V2.md)、
+  [初回最適化](docs/INT8_PERFORMANCE.md)も記録しています。
 - 今回のint8実装・検証は [docs/INT8.md](docs/INT8.md)。`artifacts/laya_int8_parity.json` と
   `artifacts/int8_*` がこの独立環境での新しい実測記録です。
 - 実checkpointのF32は上流と4入力で最大logit誤差4.89e-6。int8は最大0.141、argmax 4/4一致。
-- 実モデルの128-token一括updateは命令上限を超えるため、owner向けに層ごとの継続推論APIを追加しました。
-  `tools/canister_infer.py --stepped` で実行します。品質・校正・mainnet運用の合格を意味しません。
+- 実モデルの128-token Choiceは**単一updateで39.248B命令**で成功し、分割推論も2 updateで完走しました。
+  `tools/canister_infer.py --stepped` で継続推論を実行できます。品質・校正・mainnet運用の合格を意味しません。
+- 現行Wasm・packでは、[`--max-update-instructions`で予算を指定](docs/INT8_INSTRUCTION_BUDGET.md)すると、実測に基づいて単一updateか分割推論を選べます。これは推定によるソフト予算です。
+- 単一updateの最大成功実測は**128 tokens**ですが、反復したChoice入力での結果であり、任意の入力での成功保証ではありません。
+  旧Choice schemaの最短28-token入力は8.495B命令でquery上限5Bを超えます。現行packのowner専用raw queryは[最大16 tokensまで受け付け、17以上を推論前に拒否](docs/INT8_SHORT_QUERY.md)します。短い別schemaでの判断品質は未検証です。
+  入力上限は128 tokensです。[範囲と制約](docs/INT8_OPTIMIZATION_V4.md)を参照してください。
 - 以下のv0.2本文と旧artifactsは切り出し元の履歴です。現在の検証状態は上記文書を参照してください。
 - 元コミット以降のIC-Verdict側の修正・最適化は含みません。
 

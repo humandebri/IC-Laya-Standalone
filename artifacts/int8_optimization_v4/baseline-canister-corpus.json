@@ -1,0 +1,1229 @@
+{
+  "measured_at": "2026-09-25T04:40:46.154161+00:00",
+  "network": "local",
+  "module_hash": "0x0a7d92800e630bca70e3bdfdf09ea781460ddc7f495a6ba91efe1c0b0578f187",
+  "bundle_sha256": "bb70b3f0f2806bef5d4b670f44bb606892067fc0ebd928bd682b98ebdb2dc092",
+  "corpus_sha256": "aa75a7c811ab4a5698dcb6d8fc9d65440889bf0a98d3ff59bf6f8ae279b3370f",
+  "baseline_sha256": null,
+  "cases": [
+    {
+      "id": "choice-natural-00",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 44,
+      "logits": [
+        1.7130183,
+        -2.230556,
+        0.44230524
+      ],
+      "instructions": 14361088265,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-01",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        -1.6774145,
+        -0.78685236,
+        0.7434696
+      ],
+      "instructions": 13737708503,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-02",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 38,
+      "logits": [
+        -1.4436922,
+        0.2864263,
+        1.1274356
+      ],
+      "instructions": 12459671236,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-03",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 43,
+      "logits": [
+        -2.0198948,
+        -0.035053194,
+        -0.098879
+      ],
+      "instructions": 14318447692,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-04",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -0.7286611,
+        -0.5120474,
+        1.0022585
+      ],
+      "instructions": 12873940759,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-05",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -1.688051,
+        -2.8429694,
+        -0.2195123
+      ],
+      "instructions": 12871300145,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-06",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        -1.2826577,
+        0.30697906,
+        1.3830675
+      ],
+      "instructions": 13736090163,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-07",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 43,
+      "logits": [
+        0.43670917,
+        -0.6296352,
+        0.8637319
+      ],
+      "instructions": 14320609742,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-08",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -2.6221147,
+        -0.43443108,
+        1.978673
+      ],
+      "instructions": 12882696288,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-09",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -0.18454261,
+        -0.91283506,
+        1.0286278
+      ],
+      "instructions": 12867134793,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-10",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        -2.677568,
+        -2.1528404,
+        -0.17154552
+      ],
+      "instructions": 13738074144,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-11",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        -0.95652145,
+        -0.3451166,
+        0.05907891
+      ],
+      "instructions": 13734102134,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-12",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 37,
+      "logits": [
+        -0.9309317,
+        -0.64275986,
+        0.5626713
+      ],
+      "instructions": 12093057752,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-13",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -1.1925107,
+        -0.9085826,
+        1.6029379
+      ],
+      "instructions": 12838881260,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-14",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        0.48671526,
+        -1.1945363,
+        1.2232683
+      ],
+      "instructions": 12874905224,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-15",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        -2.541363,
+        -1.7496555,
+        0.9359103
+      ],
+      "instructions": 13377570041,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-16",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -2.922528,
+        -0.80226547,
+        1.0218618
+      ],
+      "instructions": 12871426356,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-17",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -0.71591586,
+        -1.9714196,
+        0.6870694
+      ],
+      "instructions": 12834448836,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-18",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        0.24367738,
+        -0.30380392,
+        1.7890362
+      ],
+      "instructions": 13736571960,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-19",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        -2.2227862,
+        -0.041933164,
+        1.3473562
+      ],
+      "instructions": 13379118558,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-20",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -1.5647134,
+        -1.9037528,
+        0.5714981
+      ],
+      "instructions": 12832105884,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-21",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        -0.02282437,
+        0.06910928,
+        1.2587292
+      ],
+      "instructions": 13374175110,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-22",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        -2.199033,
+        -0.33356538,
+        0.67413646
+      ],
+      "instructions": 13373812426,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-natural-23",
+      "schema": "choice",
+      "kind": "natural_text",
+      "tokens": 44,
+      "logits": [
+        -1.9138536,
+        -0.31842393,
+        -0.5835483
+      ],
+      "instructions": 14355714864,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-35",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 35,
+      "logits": [
+        0.9719198,
+        -0.76055354,
+        1.4565529
+      ],
+      "instructions": 11563558518,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-63",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 63,
+      "logits": [
+        1.2588612,
+        -2.1272266,
+        0.6711373
+      ],
+      "instructions": 20351233498,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-64",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 64,
+      "logits": [
+        1.193822,
+        -2.239922,
+        0.5372669
+      ],
+      "instructions": 20392307316,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-65",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 65,
+      "logits": [
+        1.1216102,
+        -2.2893438,
+        0.7973532
+      ],
+      "instructions": 20920842708,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-96",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 96,
+      "logits": [
+        1.0181341,
+        -1.4883227,
+        0.88033146
+      ],
+      "instructions": 31485013059,
+      "update_calls": 1
+    },
+    {
+      "id": "choice-boundary-112",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 112,
+      "logits": [
+        1.0288358,
+        -1.6918596,
+        0.3423704
+      ],
+      "instructions": 37359705869,
+      "update_calls": 2
+    },
+    {
+      "id": "choice-boundary-127",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 127,
+      "logits": [
+        0.9948462,
+        -1.4919124,
+        0.2790797
+      ],
+      "instructions": 42819274175,
+      "update_calls": 2
+    },
+    {
+      "id": "choice-boundary-128",
+      "schema": "choice",
+      "kind": "length_boundary",
+      "tokens": 128,
+      "logits": [
+        0.99742746,
+        -1.5374423,
+        0.32783198
+      ],
+      "instructions": 42853599933,
+      "update_calls": 2
+    },
+    {
+      "id": "noul-natural-00",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 51,
+      "logits": [
+        -1.6521304,
+        0.20382941
+      ],
+      "instructions": 16893963853,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-01",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 49,
+      "logits": [
+        3.2810984,
+        -0.79103005
+      ],
+      "instructions": 15940011426,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-02",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 45,
+      "logits": [
+        2.7696939,
+        -0.45842993
+      ],
+      "instructions": 14862323292,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-03",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 50,
+      "logits": [
+        3.4385066,
+        -0.80499595
+      ],
+      "instructions": 16310067706,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-04",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        1.7536916,
+        -0.12430838
+      ],
+      "instructions": 15389336711,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-05",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        5.0990334,
+        -0.8872024
+      ],
+      "instructions": 15394073542,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-06",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 49,
+      "logits": [
+        3.0736644,
+        -0.6004768
+      ],
+      "instructions": 15936810503,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-07",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 50,
+      "logits": [
+        0.41847903,
+        0.12778266
+      ],
+      "instructions": 16299737207,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-08",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        2.622223,
+        -0.47473738
+      ],
+      "instructions": 15394502590,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-09",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        3.231652,
+        -0.70953333
+      ],
+      "instructions": 15389535221,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-10",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 49,
+      "logits": [
+        4.595894,
+        -0.71176535
+      ],
+      "instructions": 15945360577,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-11",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 49,
+      "logits": [
+        2.9100676,
+        -0.53943413
+      ],
+      "instructions": 15936543746,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-12",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 44,
+      "logits": [
+        3.2436616,
+        -0.7002854
+      ],
+      "instructions": 14350421666,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-13",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 46,
+      "logits": [
+        2.1560204,
+        -0.3945192
+      ],
+      "instructions": 15224148127,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-14",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        1.0306568,
+        -0.043776136
+      ],
+      "instructions": 15388295998,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-15",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 48,
+      "logits": [
+        4.6015425,
+        -0.81021637
+      ],
+      "instructions": 15426123838,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-16",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 47,
+      "logits": [
+        5.2867255,
+        -0.6706205
+      ],
+      "instructions": 15395849233,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-17",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 46,
+      "logits": [
+        3.3552115,
+        -0.7923464
+      ],
+      "instructions": 15224568132,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-18",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 49,
+      "logits": [
+        0.396092,
+        0.08861421
+      ],
+      "instructions": 15929899479,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-19",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 48,
+      "logits": [
+        1.295471,
+        -0.041610543
+      ],
+      "instructions": 15417301425,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-20",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 46,
+      "logits": [
+        4.359547,
+        -0.68029207
+      ],
+      "instructions": 15224610703,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-21",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 48,
+      "logits": [
+        1.9656343,
+        -0.12906995
+      ],
+      "instructions": 15417852000,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-22",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 48,
+      "logits": [
+        2.982392,
+        -0.61707973
+      ],
+      "instructions": 15421060685,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-natural-23",
+      "schema": "noul",
+      "kind": "natural_text",
+      "tokens": 51,
+      "logits": [
+        7.163976,
+        -0.67999
+      ],
+      "instructions": 16902866694,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-35",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 35,
+      "logits": [
+        2.482936,
+        -0.4794719
+      ],
+      "instructions": 11552801537,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-63",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 63,
+      "logits": [
+        -1.6627563,
+        0.21845359
+      ],
+      "instructions": 20337559936,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-64",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 64,
+      "logits": [
+        -1.6044564,
+        0.21646312
+      ],
+      "instructions": 20379592232,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-65",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 65,
+      "logits": [
+        -1.7151856,
+        0.23989561
+      ],
+      "instructions": 20910341055,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-96",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 96,
+      "logits": [
+        -1.4141423,
+        0.17483164
+      ],
+      "instructions": 31469030060,
+      "update_calls": 1
+    },
+    {
+      "id": "noul-boundary-112",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 112,
+      "logits": [
+        -1.2856212,
+        0.14659032
+      ],
+      "instructions": 37342863643,
+      "update_calls": 2
+    },
+    {
+      "id": "noul-boundary-127",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 127,
+      "logits": [
+        -1.2190472,
+        0.141584
+      ],
+      "instructions": 42803511032,
+      "update_calls": 2
+    },
+    {
+      "id": "noul-boundary-128",
+      "schema": "noul",
+      "kind": "length_boundary",
+      "tokens": 128,
+      "logits": [
+        -1.4370568,
+        0.17439447
+      ],
+      "instructions": 42835811344,
+      "update_calls": 2
+    },
+    {
+      "id": "score-natural-00",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 43,
+      "logits": [
+        -1.7443765,
+        0.22744346,
+        1.6963248
+      ],
+      "instructions": 14323418809,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-01",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        0.18225169,
+        1.1747382,
+        0.6161856
+      ],
+      "instructions": 13377031337,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-02",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 37,
+      "logits": [
+        -1.1644039,
+        0.30404416,
+        1.4927663
+      ],
+      "instructions": 12098641155,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-03",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        0.81520873,
+        1.627126,
+        0.6820923
+      ],
+      "instructions": 13736194568,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-04",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -0.69650376,
+        1.2076973,
+        1.4809384
+      ],
+      "instructions": 12833946687,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-05",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        0.095364854,
+        1.5672108,
+        1.1041104
+      ],
+      "instructions": 12829869764,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-06",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        0.15506557,
+        1.0060964,
+        0.8020086
+      ],
+      "instructions": 13373874381,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-07",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 42,
+      "logits": [
+        -0.044958204,
+        1.1375039,
+        1.1704532
+      ],
+      "instructions": 13738367924,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-08",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        0.5685798,
+        0.17345382,
+        1.6280417
+      ],
+      "instructions": 12840447107,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-09",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -0.30784786,
+        1.0102074,
+        1.2930557
+      ],
+      "instructions": 12827750033,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-10",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        0.25155827,
+        1.2378428,
+        0.9456325
+      ],
+      "instructions": 13376135138,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-11",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        0.11051108,
+        0.9699335,
+        0.3130839
+      ],
+      "instructions": 13373094406,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-12",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 36,
+      "logits": [
+        -0.640878,
+        1.0785666,
+        1.1717006
+      ],
+      "instructions": 11592255515,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-13",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 38,
+      "logits": [
+        -0.6065203,
+        0.9345586,
+        1.3273487
+      ],
+      "instructions": 12458864554,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-14",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        -0.041125234,
+        1.218029,
+        0.929282
+      ],
+      "instructions": 12834393546,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-15",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -0.7452635,
+        1.0728133,
+        0.9265968
+      ],
+      "instructions": 12872733318,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-16",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 39,
+      "logits": [
+        0.9571194,
+        1.7396268,
+        0.28492188
+      ],
+      "instructions": 12830914239,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-17",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 38,
+      "logits": [
+        -0.96890104,
+        1.3178765,
+        1.4013352
+      ],
+      "instructions": 12455850595,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-18",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 41,
+      "logits": [
+        0.10794306,
+        1.1861243,
+        1.3138543
+      ],
+      "instructions": 13372880686,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-19",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -0.6908524,
+        0.7216819,
+        1.3507335
+      ],
+      "instructions": 12872548203,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-20",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 38,
+      "logits": [
+        0.9817325,
+        1.6604977,
+        0.7502987
+      ],
+      "instructions": 12450961952,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-21",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        0.31542552,
+        1.5713116,
+        1.0050285
+      ],
+      "instructions": 12869187959,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-22",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 40,
+      "logits": [
+        -0.42593035,
+        0.53488004,
+        1.1263572
+      ],
+      "instructions": 12871174956,
+      "update_calls": 1
+    },
+    {
+      "id": "score-natural-23",
+      "schema": "score",
+      "kind": "natural_text",
+      "tokens": 43,
+      "logits": [
+        0.844437,
+        0.6575104,
+        -0.092470646
+      ],
+      "instructions": 14316214677,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-35",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 35,
+      "logits": [
+        -0.9407078,
+        -0.11303771,
+        2.1066523
+      ],
+      "instructions": 11564903845,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-63",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 63,
+      "logits": [
+        -0.8534374,
+        0.77674985,
+        1.5364414
+      ],
+      "instructions": 20350928526,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-64",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 64,
+      "logits": [
+        -1.1564655,
+        0.48120767,
+        1.4924234
+      ],
+      "instructions": 20393616517,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-65",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 65,
+      "logits": [
+        -0.9343279,
+        0.85180444,
+        1.4891467
+      ],
+      "instructions": 20921116480,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-96",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 96,
+      "logits": [
+        0.12042247,
+        1.393421,
+        1.4290649
+      ],
+      "instructions": 31486736775,
+      "update_calls": 1
+    },
+    {
+      "id": "score-boundary-112",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 112,
+      "logits": [
+        0.120289,
+        1.3216044,
+        1.3171325
+      ],
+      "instructions": 37358612793,
+      "update_calls": 2
+    },
+    {
+      "id": "score-boundary-127",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 127,
+      "logits": [
+        -0.17765532,
+        1.1719671,
+        1.3276256
+      ],
+      "instructions": 42819584921,
+      "update_calls": 2
+    },
+    {
+      "id": "score-boundary-128",
+      "schema": "score",
+      "kind": "length_boundary",
+      "tokens": 128,
+      "logits": [
+        -0.20316152,
+        1.1227856,
+        1.4372214
+      ],
+      "instructions": 42855082985,
+      "update_calls": 2
+    }
+  ],
+  "tolerance": 0.002,
+  "passes": true,
+  "module_unchanged": true
+}

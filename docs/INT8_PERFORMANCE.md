@@ -1,8 +1,98 @@
 # int8推論の詳細計測と改善
 
+> 最新の実測は[F32書戻し最適化](INT8_F32_WRITEBACK.md)を参照。
+
+> この文書は4×4タイル版の履歴。最新の16×16・SIMD量子化・2 updateの結果と単一update境界は
+> [INT8_OPTIMIZATION_V2.md](INT8_OPTIMIZATION_V2.md)を参照。以下の88-token境界と3 updateは旧版の値。
+
 2026-09-22、ローカルcanister `4caro-hl777-77775-aaaba-cai`。
 固定revisionの実Laya、同じint8 pack、同じ128-token Choiceを比較する。
 量子化方式・重み・入力・層数を変えず、整数行列積の実装を改善した。
+
+## updateで扱える入力長
+
+2026-09-22〜23（JST）に計測した実LayaのW8A8 packについて、確認済み範囲は次のとおり。
+ここでtokensは本文だけでなく、質問・選択肢・特殊tokenを含む入力全体を指す。
+1Bは10億命令。ICの単一update上限40Bとの比較は
+[公式resource limits](https://docs.internetcomputer.org/references/resource-limits)に基づく。
+
+| 実行方式 | 入力 | 実測命令数 | 確認結果 |
+|---|---|---:|---|
+| `infer_tokens`の単一update | 45 tokens、Noul 2選択肢 | 20.586B | 完走。40Bに対して約48.5%の残予算 |
+| 最大16ステップずつの分割update | 128 tokens、Choice 3選択肢 | 合計59.420B、最大batch 31.619B | 完走。開始1回＋推論2回の計3 update |
+| 128 tokensの単一update | 上記Choice入力 | 分割時の合計が40Bを超過 | 一括実行可能とは扱わない。分割を使用 |
+
+### 単一updateの境界測定（2026-09-23 JST）
+
+Choiceの本文tokenを反復・短縮し、質問・3選択肢・終端SEPを固定した長さ別測定を追加した。
+**最大成功実測は88 tokens。ただし86/87は失敗するため、88を一律の受付上限にはできない。**
+
+| Choiceの総tokens | 単一updateの命令数／結果 |
+|---|---:|
+| 80 | 36.110B、成功 |
+| 81 | 37.265B、成功 |
+| 82 | 38.374B、成功 |
+| 83 | 39.486B、成功 |
+| 84 | 37.998B、成功 |
+| 85 | 39.161B、成功 |
+| 86、87 | 40B超過（IC0522） |
+| 88 | 39.910B、成功。残予算約0.23% |
+| 89〜92、96 | 40B超過（IC0522） |
+
+Noul（2選択肢）とScore（3選択肢）も85/88で成功し、86/87/89で40Bを超過した。
+88-tokenはそれぞれ39.918B / 39.912B命令。3系列とも最大成功実測は88だが、
+残予算は約0.2%にとどまる。
+
+4-tokenタイルと端数処理の違いで命令数は単調増加しない。85までの測定成功も、
+任意の文章・選択肢数・APIの成功保証ではない。93〜95と97〜127はこの境界測定では未測定。
+長さ上限だけで成功を保証するには、選択肢数・タイル端数を含む追加検証と余裕が必要。
+根拠は [境界測定JSON](../artifacts/int8_update_limits.json)。各入力token列と成功命令数、
+失敗時のIC0522、module/bundle hashを保存し、失敗を成功や推定値で補っていない。
+
+```sh
+.venv/bin/python tools/measure_update_limits.py --cases choice --lengths 80,81,82,83,84,85,86,87,88,89,90,91,92,96
+.venv/bin/python tools/measure_update_limits.py --cases noul,score --lengths 85,86,87,88,89
+```
+
+### 分割回数について
+
+1層ずつ32ステップの旧実装を、最大16ステップずつ進めるバッチAPIへ変更した。
+2026-09-23 JST、同じ実モデル・128-token Choiceで次を確認した。
+
+| 呼出し | 処理 | 命令数 |
+|---|---|---:|
+| start | embeddingと初期化 | 0.019B |
+| batch 1 | ステップ1〜16 | 31.619B |
+| batch 2 | ステップ17〜32 | 27.782B |
+| 合計 | **計3 update（従来33回）** | **59.420B** |
+
+各推論updateが40B以内で完走し、従来版と入力・pack hashおよびlogitsが完全一致した。
+最大バッチの残予算は約21%。ローカルwall timeは11.03秒（CLIを含む、mainnetの見積もりではない）。
+新Wasmのmodule hashは`22514c506ad4a4b2120fc055fb40e633dcdbe6d0462adef6688503baf30276d7`。
+命令数の差をバッチ化だけの効果とは扱わない。主目的はupdate回数の削減。
+証跡: [128-tokenバッチ推論](../artifacts/int8_batched_choice-128.json)。
+
+`--stepped`は既定で16ステップずつ。`--steps-per-call 1`で従来方式、
+`--profile`は常に1ステップずつ計測する。異なるモデルでは16ステップが40Bに収まる保証はなく、
+必要に応じて`--steps-per-call`を小さくする。この測定時点では開始処理を統合していない。後続のV2で計2 updateのAPIを実装・検証した。
+
+```sh
+.venv/bin/python tools/canister_infer.py --stepped --input artifacts/laya-choice-128-input.json --output artifacts/int8_batched_choice-128.json
+.venv/bin/python tools/check_batch_inference_protocol.py
+```
+
+分割updateは**現実装の入力上限128 tokensまで、上表の1入力で完走を確認**した。
+全入力・全選択肢数での完走保証ではない。`MAX_TOKENS=128`を適用するため、129以上は
+分割しても受け付けない。128を超える拡張には別途実装・検証が必要。
+
+いずれもowner向けraw-token APIの測定であり、`evaluate`のReceipt発行やexecutor経路の
+上限を示すものではない。モデルはwarm済みで、アップロード・warmupの費用は含まない。
+単一updateの境界測定は旧Wasm（module hash `8b7106bdb1d54194c1c0431905dffaf93098ad6fac4e2c50137817f662b32490`）
+によるローカル測定で、バッチ版Wasmでの
+単一update境界の再測定は未実施。上記3 updateの結果は新Wasmで確認した。mainnet実測は未実施。
+
+証跡: [45-token単一update](../artifacts/int8_tiled_noul_single.json)、
+[128-token分割update](../artifacts/int8_batched_choice-128.json)。
 
 ## 改善前の内訳
 

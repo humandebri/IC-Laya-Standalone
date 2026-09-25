@@ -1,7 +1,11 @@
 # Laya int8 canister
 
-後続の最適化と最新の命令数は [INT8_PERFORMANCE.md](INT8_PERFORMANCE.md) を参照。
-128-tokenで約57%削減、45-token Noulは単一updateで成功した。以下の初期実装の測定値は履歴として保持する。
+最新の実測は [INT8_OPTIMIZATION_V4.md](INT8_OPTIMIZATION_V4.md) を参照。
+128-token Choiceは最終Wasmの単一updateで39.248B命令となり、2 updateの分割推論も完走した。旧Choice schemaの最短28-token入力は約8.495B命令でquery上限5Bを超える。現行packのowner専用[raw queryは最大16 tokens](INT8_SHORT_QUERY.md)で、17以上は推論前に拒否する。前段階は
+[INT8_OPTIMIZATION_V3.md](INT8_OPTIMIZATION_V3.md)、
+[INT8_F32_WRITEBACK.md](INT8_F32_WRITEBACK.md)、
+[INT8_OPTIMIZATION_V2.md](INT8_OPTIMIZATION_V2.md)、初回は
+[INT8_PERFORMANCE.md](INT8_PERFORMANCE.md)に記録し、以下の初期測定値は履歴として保持する。
 
 実装日: 2026-09-22。切り出し後のこのリポジトリで検証した記録。
 対象は `convaiinnovations/laya-typed-decisions` の固定revision
@@ -19,17 +23,24 @@
 - Wasm kernelだけ`simd128`を有効にし、signed i8→i16拡張とinteger dotを使う。
   Candle全体のtarget-featureは変更しない。
 - packのハッシュはscaleも覆う。非有限・非正scale、長さ・形状の不一致、破損を拒否する。
-- 実モデルは45-tokenでも一括updateの40B命令上限に達した。
-  `start_token_inference` → `step_token_inference(job, expected_step)` の継続推論を使う。
-  28 encoder層・final norm・2 head層・scorerの**32ステップ**に分ける。
-  各ステップの演算は一括推論と共通で、途中結果だけをheapに保持する。
-- APIはowner専用。直前ステップの再送は同じ結果を返し、古いjob/stepは拒否する。
+- 初期実装は45-tokenでも一括updateの40B命令上限に達した。V4では測定した128-token Choice入力が単一updateで成功した。一般の入力では上限超過の可能性があるため、分割経路も利用できる。
+  `start_token_inference_batch(input, request_id, max_steps)` →
+  `step_token_inference_batch(job, expected_step, max_steps)` の継続推論を使う。
+  28 encoder層・final norm・2 head層・scorerの**32ステップ**を、既定では16ずつまとめる。
+  現行実装では128 tokensを**開始＋最初の16ステップ、残り16ステップの計2 update**でも完走済み。
+  演算は一括推論と共通で、途中結果だけをheapに保持する。
+- APIはowner専用。直前要求と開始位置・max_stepsが同じ再送は同じ結果を返し、古いjob/stepや変更されたmax_stepsは拒否する。
+  max_stepsは1〜16。残りステップが少なければ最後まで進める。バッチ内でエラーが起きた場合は途中状態をcommitしない。
+  従来の`step_token_inference`も利用可能で、CLIでは`--stepped --steps-per-call 1`を指定する。
+  `--profile`は層別計測のため常に1ステップずつ実行する。
   `token_inference_status`で進捗・最終logitsを再取得できる。
-  新規start・model交換は旧jobを無効にする。upgradeではjobを破棄し、モデルをwarmup後に最初から再実行する。
+  開始統合APIは同じrequest_id・入力・max_stepsの再送に最初の応答を返す。同じIDで内容を変えると拒否する。
+  CLIはIDを事前表示し、`--request-id HEX`で現jobの開始を再送できる。後続バッチは直前要求だけを再送できる。
+  別IDの新規start・model交換は旧jobを無効にする。upgradeではjobを破棄し、モデルをwarmup後に最初から再実行する。
 - `measure_phases`もowner専用。通常推論を許可されたcallerだけでは実行できない。
   `evaluate`と`measure_phases`は登録済みschemaのqtypeを現packの対応表と照合する。
   モデル交換で対応表が変わった旧schemaは`BindingMismatch`となるため、schemaのversionを更新して再登録する。
-- `infer_tokens`は小規模モデル向けの一括updateとして残る。
+- `infer_tokens`は単一updateに収まる入力向けの一括推論として残る。
   継続APIはraw logitsと命令数を返し、Receipt・校正・executorの資金移動権限は発行しない。
   既存`evaluate`/executor経路への継続推論の接続は未実装であり、実モデルで一括evaluateの成功は主張しない。
 

@@ -1,24 +1,27 @@
-# Rust build output. Keep Cargo.lock and small synthetic fixture model.bin files.
+# Build and local canister state
 /target/
 /build/
-
-# Local IC state and identities.
 /.dfx/
 /.icp/
 /.icphome/
+
+# Secrets and local settings
 *.pem
 *.key
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
 
-# Downloaded model weights and upstream reference snapshots.
+# Downloaded models and generated performance fixtures
 /checkpoints/
 /models/
 /.cache/
-
-# Sized synthetic packs for perf measurement. Regenerable in seconds via
-# `python tools/generate_fixtures.py --tier <name>`; measure-m alone is 81 MiB.
 /fixtures/measure-*/
 
-# Python environments, caches and coverage output.
+# Python environments and caches
 /.venv/
 /venv/
 __pycache__/
@@ -30,19 +33,10 @@ __pycache__/
 .coverage.*
 /htmlcov/
 
-# Local environment values; retain shareable templates.
-.env
-.env.*
-!.env.example
-!.env.sample
-!.env.template
-!.env.*.example
-
-# New raw execution logs. Keep artifacts/*.json as reproducible measurement evidence.
-# Already tracked historical logs remain tracked.
+# Raw logs are disposable; benchmark JSON is reviewable evidence
 /artifacts/**/*.log
 
-# macOS metadata and editor temporary files.
+# OS and editor files
 .DS_Store
 ._*
 *.swp

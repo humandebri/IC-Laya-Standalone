@@ -1,0 +1,276 @@
+{
+  "measured_at": "2026-09-25T05:08:17.214858+00:00",
+  "network": "local",
+  "module_hash": "0x6914da6f6d286b659d292307a6fc250df69ad2c71e60a52466a16f09d9128a80",
+  "bundle_sha256": "bb70b3f0f2806bef5d4b670f44bb606892067fc0ebd928bd682b98ebdb2dc092",
+  "tokenizer_sha256": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+  "cases": [
+    {
+      "name": "choice-choose",
+      "question": "choice question: Choose.",
+      "options": [
+        "red",
+        "blue",
+        "green"
+      ],
+      "state": "blue",
+      "input": {
+        "input_ids": [
+          50281,
+          22122,
+          1953,
+          27,
+          28890,
+          15,
+          50282,
+          50284,
+          2502,
+          50284,
+          4797,
+          50284,
+          4759,
+          50282,
+          11863,
+          50282
+        ],
+        "markers": [
+          7,
+          9,
+          11
+        ],
+        "qtype_id": 0
+      },
+      "input_sha256": "a0796168bf73762f4e33de8253bc694d223033b442175b68ef5b7c06eb5e4bf5",
+      "tokens": 16,
+      "result": {
+        "input_tokens": 16,
+        "logits": [
+          -1.4778068,
+          0.60106695,
+          -0.6658714
+        ],
+        "instructions": 4728289637,
+        "step_instructions": [],
+        "completed_steps": [],
+        "steps_per_call": null,
+        "inference_update_calls": 1,
+        "start_request_id": null,
+        "profiles": [],
+        "local_wall_seconds": 0.7247037919987633
+      }
+    },
+    {
+      "name": "choice-color-question",
+      "question": "choice question: Color?",
+      "options": [
+        "red",
+        "blue",
+        "green"
+      ],
+      "state": "blue",
+      "input": {
+        "input_ids": [
+          50281,
+          22122,
+          1953,
+          27,
+          9472,
+          32,
+          50282,
+          50284,
+          2502,
+          50284,
+          4797,
+          50284,
+          4759,
+          50282,
+          11863,
+          50282
+        ],
+        "markers": [
+          7,
+          9,
+          11
+        ],
+        "qtype_id": 0
+      },
+      "input_sha256": "5e99fdcd1ee14052e2f01b9feb80c6cb450bc40d969d3d578f0589b436145e7f",
+      "tokens": 16,
+      "result": {
+        "input_tokens": 16,
+        "logits": [
+          -0.852014,
+          0.63615847,
+          -0.21872741
+        ],
+        "instructions": 4728138768,
+        "step_instructions": [],
+        "completed_steps": [],
+        "steps_per_call": null,
+        "inference_update_calls": 1,
+        "start_request_id": null,
+        "profiles": [],
+        "local_wall_seconds": 0.7542229159989802
+      }
+    },
+    {
+      "name": "choice-color",
+      "question": "choice question: Pick a color.",
+      "options": [
+        "red",
+        "blue",
+        "green"
+      ],
+      "state": "blue",
+      "input": {
+        "input_ids": [
+          50281,
+          22122,
+          1953,
+          27,
+          20745,
+          247,
+          3295,
+          15,
+          50282,
+          50284,
+          2502,
+          50284,
+          4797,
+          50284,
+          4759,
+          50282,
+          11863,
+          50282
+        ],
+        "markers": [
+          9,
+          11,
+          13
+        ],
+        "qtype_id": 0
+      },
+      "input_sha256": "b1759234230b558b04d0f75a9f60a18bccc16e9e52ab9c87595b461339e6f801",
+      "tokens": 18,
+      "result": {
+        "input_tokens": 18,
+        "logits": [
+          -0.9877326,
+          0.54495025,
+          0.018249873
+        ],
+        "instructions": 5501503366,
+        "step_instructions": [],
+        "completed_steps": [],
+        "steps_per_call": null,
+        "inference_update_calls": 1,
+        "start_request_id": null,
+        "profiles": [],
+        "local_wall_seconds": 0.7776805419998709
+      }
+    },
+    {
+      "name": "noul-safe",
+      "question": "noul question: Safe?",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "state": "yes",
+      "input": {
+        "input_ids": [
+          50281,
+          79,
+          3941,
+          1953,
+          27,
+          28481,
+          32,
+          50282,
+          50284,
+          642,
+          50284,
+          4754,
+          50282,
+          9820,
+          50282
+        ],
+        "markers": [
+          8,
+          10
+        ],
+        "qtype_id": 2
+      },
+      "input_sha256": "46680048f756b9264aa807536ca6e125a76dfda6453022640b56abc47167b476",
+      "tokens": 15,
+      "result": {
+        "input_tokens": 15,
+        "logits": [
+          -0.80508786,
+          0.44866276
+        ],
+        "instructions": 4680026711,
+        "step_instructions": [],
+        "completed_steps": [],
+        "steps_per_call": null,
+        "inference_update_calls": 1,
+        "start_request_id": null,
+        "profiles": [],
+        "local_wall_seconds": 0.7498047080007382
+      }
+    },
+    {
+      "name": "noul-is-safe",
+      "question": "noul question: Is this safe?",
+      "options": [
+        "no",
+        "yes"
+      ],
+      "state": "yes",
+      "input": {
+        "input_ids": [
+          50281,
+          79,
+          3941,
+          1953,
+          27,
+          1680,
+          436,
+          4999,
+          32,
+          50282,
+          50284,
+          642,
+          50284,
+          4754,
+          50282,
+          9820,
+          50282
+        ],
+        "markers": [
+          10,
+          12
+        ],
+        "qtype_id": 2
+      },
+      "input_sha256": "a7706f9a7feef2a1bcf77e9be4853eaa50f9e1f13c627da3aa214c580bc77e10",
+      "tokens": 17,
+      "result": {
+        "input_tokens": 17,
+        "logits": [
+          -0.48716187,
+          -0.18935509
+        ],
+        "instructions": 5156239800,
+        "step_instructions": [],
+        "completed_steps": [],
+        "steps_per_call": null,
+        "inference_update_calls": 1,
+        "start_request_id": null,
+        "profiles": [],
+        "local_wall_seconds": 0.7757104580014129
+      }
+    }
+  ],
+  "note": "Short valid-looking raw inputs, not a quality or registered-schema test."
+}

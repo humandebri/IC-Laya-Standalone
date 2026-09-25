@@ -209,7 +209,8 @@ fn start_warmup()->Result<u64>{
     {Err(Error::ModelUnavailable("Candle feature disabled".into()))}
 }
 #[ic_cdk::update]
-fn warmup_next()->Result<bool>{
+fn warmup_next()->Result<bool>{warmup_next_inner()}
+fn warmup_next_inner()->Result<bool>{
     owner()?;
     #[cfg(feature="candle")]
     {
@@ -228,9 +229,45 @@ fn warmup_next()->Result<bool>{
     #[cfg(not(feature="candle"))]
     {Err(Error::ModelUnavailable("Candle feature disabled".into()))}
 }
+#[derive(CandidType,Deserialize)]
+pub struct WarmupProfile {pub done:bool,pub instructions:u64}
+/// Owner-only measurement; each call loads one tensor just like warmup_next.
+#[ic_cdk::update]
+fn warmup_next_profile()->Result<WarmupProfile>{
+    let start=ic_cdk::api::instruction_counter();
+    let done=warmup_next_inner()?;
+    Ok(WarmupProfile{done,instructions:ic_cdk::api::instruction_counter().saturating_sub(start)})
+}
 #[cfg(feature="candle")]
-struct TokenJob { id:Digest,session:laya_candle::InferenceSession,instructions:u64,total:u32,last:Option<InferenceProgress> }
-#[derive(Clone,CandidType,Deserialize)]
+struct TokenJob { id:Digest,session:laya_candle::InferenceSession,instructions:u64,total:u32,last:Option<InferenceProgress>,last_request:Option<(u32,u32)>,start_request:Option<(Digest,Digest,InferenceProgress)> }
+#[cfg(feature="candle")]
+impl TokenJob {
+    fn replay_start(&self,request_id:Digest,fingerprint:Digest)->Result<Option<InferenceProgress>>{
+        if let Some((id,old,result))=&self.start_request{
+            if *id==request_id{return if *old==fingerprint{Ok(Some(result.clone()))}else{Err(Error::IdConflict)};}
+        }
+        Ok(None)
+    }
+    fn advance(&mut self,model:&laya_candle::LayaModel,job:Digest,expected_step:u32,max_steps:u32,counter:fn()->u64)->Result<InferenceProgress>{
+        if !(1..=16).contains(&max_steps){return Err(Error::Invalid("max_steps must be 1..=16".into()));}
+        if self.id!=job{return Err(Error::BindingMismatch);}
+        if self.last_request==Some((expected_step,max_steps)){return self.last.clone().ok_or(Error::Transition);}
+        if self.session.completed_steps()!=expected_step as usize{return Err(Error::BindingMismatch);}
+        if expected_step>=self.total{return Err(Error::Transition);}
+        let start=counter();
+        // Tensor clones share immutable storage. Commit only after every requested layer succeeds.
+        let mut session=self.session.clone();
+        let mut logits=None;
+        for _ in 0..max_steps.min(self.total-expected_step){logits=model.step_inference(&mut session)?;}
+        let instructions=counter().saturating_sub(start);
+        let cumulative_instructions=self.instructions.saturating_add(instructions);
+        let result=InferenceProgress{job,completed:session.completed_steps() as u32,total:self.total,logits,instructions,cumulative_instructions};
+        self.session=session;self.instructions=cumulative_instructions;
+        self.last=Some(result.clone());self.last_request=Some((expected_step,max_steps));
+        Ok(result)
+    }
+}
+#[derive(Debug,Clone,PartialEq,CandidType,Deserialize)]
 pub struct InferenceProgress { pub job:Digest,pub completed:u32,pub total:u32,pub logits:Option<Vec<f32>>,pub instructions:u64,pub cumulative_instructions:u64 }
 /// Start one owner-only, in-memory continuation; a new request replaces the old one.
 /// Upgrade drops it. The uploaded model remains in stable memory.
@@ -248,35 +285,63 @@ fn start_token_inference(input:TokenInput)->Result<InferenceProgress>{
         let old=INFERENCE.with(|j|j.borrow().as_ref().map(|j|j.id));
         let id=hash(&candid::encode_args((bundle,now,old,input)).map_err(|e|Error::Invalid(e.to_string()))?);
         let instructions=ic_cdk::api::instruction_counter().saturating_sub(start);
-        INFERENCE.with(|j|*j.borrow_mut()=Some(TokenJob{id,session,instructions,total,last:None}));
+        INFERENCE.with(|j|*j.borrow_mut()=Some(TokenJob{id,session,instructions,total,last:None,last_request:None,start_request:None}));
         Ok(InferenceProgress{job:id,completed:0,total,logits:None,instructions,cumulative_instructions:instructions})
     }
     #[cfg(not(feature="candle"))]
     {let _=input;Err(Error::ModelUnavailable("Candle feature disabled".into()))}
 }
-/// expected_step makes retries harmless: a stale request cannot silently advance twice.
+/// Start and run the first batch in one update. request_id makes retries of the current job idempotent.
 #[ic_cdk::update]
-fn step_token_inference(job:Digest,expected_step:u32)->Result<InferenceProgress>{
+fn start_token_inference_batch(input:TokenInput,request_id:Digest,max_steps:u32)->Result<InferenceProgress>{
     owner()?;
     #[cfg(feature="candle")]
     {
+        if !(1..=16).contains(&max_steps){return Err(Error::Invalid("max_steps must be 1..=16".into()));}
+        let bundle=MODEL.with(|m|m.borrow().as_ref().map(|m|m.bundle)).ok_or_else(||Error::ModelUnavailable("model is cold".into()))?;
+        let fingerprint=hash(&candid::encode_args((&input,max_steps,bundle)).map_err(|e|Error::Invalid(e.to_string()))?);
+        if let Some(replay)=INFERENCE.with(|j|j.borrow().as_ref().map(|j|j.replay_start(request_id,fingerprint)).transpose().map(Option::flatten))?{return Ok(replay);}
         let start=ic_cdk::api::instruction_counter();
-        INFERENCE.with(|j|{
-            let mut j=j.borrow_mut();let j=j.as_mut().ok_or(Error::NotFound)?;
-            if j.id!=job{return Err(Error::BindingMismatch);}
-            if expected_step.checked_add(1)==Some(j.session.completed_steps() as u32){
-                return j.last.clone().ok_or(Error::Transition);
-            }
-            if j.session.completed_steps()!=expected_step as usize{return Err(Error::BindingMismatch);}
-            let logits=MODEL.with(|m|m.borrow().as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?.step_inference(&mut j.session))?;
-            let instructions=ic_cdk::api::instruction_counter().saturating_sub(start);
-            j.instructions=j.instructions.saturating_add(instructions);
-            let result=InferenceProgress{job,completed:j.session.completed_steps() as u32,total:j.total,logits,instructions,cumulative_instructions:j.instructions};
-            j.last=Some(result.clone());Ok(result)
-        })
+        let old=INFERENCE.with(|j|j.borrow().as_ref().map(|j|j.id));
+        let id=hash(&candid::encode_args((bundle,ic_cdk::api::time(),old,request_id,fingerprint)).map_err(|e|Error::Invalid(e.to_string()))?);
+        let (mut job,mut result)=MODEL.with(|m|{
+            let m=m.borrow();let m=m.as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?;
+            let session=m.begin_inference(input)?;
+            let mut job=TokenJob{id,session,instructions:ic_cdk::api::instruction_counter().saturating_sub(start),
+                total:m.inference_steps() as u32,last:None,last_request:None,start_request:None};
+            let result=job.advance(m,id,0,max_steps,ic_cdk::api::instruction_counter)?;
+            Ok::<_,Error>((job,result))
+        })?;
+        result.instructions=result.cumulative_instructions;
+        job.last=Some(result.clone());job.start_request=Some((request_id,fingerprint,result.clone()));
+        INFERENCE.with(|j|*j.borrow_mut()=Some(job));
+        Ok(result)
     }
     #[cfg(not(feature="candle"))]
-    {let _=(job,expected_step);Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+    {let _=(input,request_id,max_steps);Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+/// Exact retries return the cached result; a stale request cannot advance twice.
+#[ic_cdk::update]
+fn step_token_inference(job:Digest,expected_step:u32)->Result<InferenceProgress>{
+    owner()?;
+    advance_token_job(job,expected_step,1)
+}
+/// Up to sixteen consecutive phases per update. Retry with the same start and limit.
+/// For larger/custom packs reduce max_steps if the update instruction limit is reached.
+#[ic_cdk::update]
+fn step_token_inference_batch(job:Digest,expected_step:u32,max_steps:u32)->Result<InferenceProgress>{
+    owner()?;
+    advance_token_job(job,expected_step,max_steps)
+}
+fn advance_token_job(job:Digest,expected_step:u32,max_steps:u32)->Result<InferenceProgress>{
+    #[cfg(feature="candle")]
+    {INFERENCE.with(|j|MODEL.with(|m|{
+        let mut j=j.borrow_mut();let j=j.as_mut().ok_or(Error::NotFound)?;
+        let m=m.borrow();let m=m.as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?;
+        j.advance(m,job,expected_step,max_steps,ic_cdk::api::instruction_counter)
+    }))}
+    #[cfg(not(feature="candle"))]
+    {let _=(job,expected_step,max_steps);Err(Error::ModelUnavailable("Candle feature disabled".into()))}
 }
 
 #[ic_cdk::query]
@@ -295,6 +360,29 @@ fn token_inference_status()->Result<InferenceProgress>{
 pub struct ProfileCost { pub name:String,pub shape:Vec<u64>,pub instructions:u64 }
 #[derive(CandidType,Deserialize)]
 pub struct ProfiledStep { pub progress:InferenceProgress,pub costs:Vec<ProfileCost> }
+/// Owner-only bounded synthetic kernel measurements; no uploaded model is required.
+#[derive(CandidType)]
+pub struct KernelBenchmark { pub instructions:u64,pub checksum:Digest,pub costs:Vec<ProfileCost> }
+#[cfg(feature="candle")]
+#[ic_cdk::update]
+fn benchmark_int8_kernel(tokens:u32,rows:u32,cols:u32)->Result<KernelBenchmark>{
+    owner()?;
+    if !(1..=128).contains(&tokens) || ![1024,3072,5248].contains(&rows) || ![1024,2624].contains(&cols){return Err(Error::Invalid("benchmark shape".into()));}
+    let (instructions,checksum,costs)=laya_candle::int8::benchmark(tokens as usize,rows as usize,cols as usize,ic_cdk::api::instruction_counter)
+        .map_err(|e|Error::ModelUnavailable(e.to_string()))?;
+    Ok(KernelBenchmark{instructions,checksum,costs:costs.into_iter().map(|c|ProfileCost{name:c.name,shape:c.shape.into_iter().map(|v|v as u64).collect(),instructions:c.instructions}).collect()})
+}
+/// Diagnostic breakdown for the three dominant 128-token matrix shapes.
+#[derive(CandidType)]
+pub struct KernelComponents { pub total:u64,pub integer_dots:u64,pub f32_writeback:u64,pub checksum:Digest }
+#[cfg(feature="candle")]
+#[ic_cdk::update]
+fn benchmark_int8_components(rows:u32,cols:u32)->Result<KernelComponents>{
+    owner()?;
+    let (total,integer_dots,f32_writeback,checksum)=laya_candle::int8::benchmark_components(rows as usize,cols as usize,ic_cdk::api::instruction_counter)
+        .map_err(|e|Error::Invalid(e.to_string()))?;
+    Ok(KernelComponents{total,integer_dots,f32_writeback,checksum})
+}
 #[ic_cdk::update]
 fn profile_token_step(job:Digest,expected_step:u32)->Result<ProfiledStep>{
     owner()?;
@@ -311,9 +399,15 @@ fn profile_token_step(job:Digest,expected_step:u32)->Result<ProfiledStep>{
 /// Does not issue a Receipt or authorize an executor action.
 #[derive(candid::CandidType, serde::Deserialize)]
 pub struct TokenInference { pub logits:Vec<f32>, pub instructions:u64 }
-#[ic_cdk::update]
-fn infer_tokens(input:TokenInput)->Result<TokenInference>{
-    owner()?;
+/// Measured on the fixed Laya W8A8 pack with 2..=7 markers and all three qtypes.
+/// The 16-token worst case stays below 5B; every measured 17-token case exceeds it.
+const QUERY_MAX_TOKENS: usize = 16;
+#[cfg(feature="candle")]
+const QUERY_BENCHMARKED_BUNDLE: Digest = [
+    0xbb,0x70,0xb3,0xf0,0xf2,0x80,0x6b,0xef,0x5d,0x4b,0x67,0x0f,0x44,0xbb,0x60,0x68,
+    0x92,0x06,0x7f,0xc0,0xeb,0xd9,0x28,0xbd,0x68,0x2b,0x98,0xeb,0xdb,0x2d,0xc0,0x92,
+];
+fn infer_tokens_inner(input:TokenInput)->Result<TokenInference>{
     #[cfg(feature="candle")]
     {
         use ic_laya_core::engine::InferenceBackend;
@@ -323,6 +417,26 @@ fn infer_tokens(input:TokenInput)->Result<TokenInference>{
     }
     #[cfg(not(feature="candle"))]
     {let _=input;Err(Error::ModelUnavailable("Candle feature disabled".into()))}
+}
+#[ic_cdk::update]
+fn infer_tokens(input:TokenInput)->Result<TokenInference>{
+    owner()?;
+    infer_tokens_inner(input)
+}
+/// Owner-only short-input query for the benchmarked pack. Returns raw,
+/// uncertified logits and no Receipt. Rejects 17+ tokens before inference.
+#[ic_cdk::query]
+fn infer_tokens_query(input:TokenInput)->Result<TokenInference>{
+    owner()?;
+    if input.input_ids.len()>QUERY_MAX_TOKENS{return Err(Error::TooLong);}
+    #[cfg(feature="candle")]
+    MODEL.with(|cell|{
+        let model=cell.borrow();
+        let model=model.as_ref().ok_or_else(||Error::ModelUnavailable("model is cold".into()))?;
+        if model.bundle!=QUERY_BENCHMARKED_BUNDLE{return Err(Error::BindingMismatch);}
+        Ok::<_,Error>(())
+    })?;
+    infer_tokens_inner(input)
 }
 ic_cdk::export_candid!();
 pub fn candid_interface()->String{__export_service()}
@@ -337,6 +451,46 @@ mod tests {
         Persistent{owner:actor(1),engine:EngineState::new(hash(&manifest)),fixture_mode:false,
             upload:Some(Upload{manifest,tokenizer_length:1,model_length:1,received:2,
                 special:FixtureTokenizer.special_tokens()})}
+    }
+
+    #[test]
+    fn batch_retries_bounds_and_mixed_single_steps() {
+        use ic_laya_core::engine::InferenceBackend;
+        fn counter()->u64{0}
+        let dir=std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/tiny-int8-prenorm");
+        let mut model=laya_candle::pack::load_directory(&dir).unwrap();
+        let input:TokenInput=serde_json::from_slice(&std::fs::read(dir.join("input.json")).unwrap()).unwrap();
+        let expected=model.infer(&input).unwrap();
+        let id=[7;32];
+        let mut job=TokenJob{id,session:model.begin_inference(input).unwrap(),instructions:0,
+            total:model.inference_steps() as u32,last:None,last_request:None,start_request:None};
+        for limit in [0,17,u32::MAX]{assert!(matches!(job.advance(&model,id,0,limit,counter),Err(Error::Invalid(_))));}
+        assert_eq!(job.session.completed_steps(),0);
+        assert_eq!(job.advance(&model,[8;32],0,2,counter),Err(Error::BindingMismatch));
+        let first=job.advance(&model,id,0,2,counter).unwrap();
+        assert_eq!(first.completed,2);
+        job.start_request=Some(([9;32],[10;32],first.clone()));
+        assert_eq!(job.replay_start([9;32],[10;32]),Ok(Some(first.clone())));
+        assert_eq!(job.replay_start([9;32],[11;32]),Err(Error::IdConflict));
+        assert_eq!(job.replay_start([8;32],[10;32]),Ok(None));
+        assert_eq!(job.advance(&model,id,0,2,counter).unwrap(),first);
+        assert_eq!(job.advance(&model,id,0,3,counter),Err(Error::BindingMismatch));
+        assert_eq!(job.advance(&model,id,1,1,counter),Err(Error::BindingMismatch));
+        // A failed call must not discard progress or the cached reply.
+        model.bundle[0]^=1;
+        assert_eq!(job.advance(&model,id,2,2,counter),Err(Error::BindingMismatch));
+        assert_eq!(job.session.completed_steps(),2);
+        assert_eq!(job.last.as_ref(),Some(&first));
+        model.bundle[0]^=1;
+        let single=job.advance(&model,id,2,1,counter).unwrap();
+        assert_eq!(job.advance(&model,id,2,1,counter).unwrap(),single);
+        let last=job.advance(&model,id,3,16,counter).unwrap();
+        assert_eq!(last.completed,job.total);
+        assert_eq!(last.logits,Some(expected));
+        assert_eq!(job.replay_start([9;32],[10;32]),Ok(Some(first)));
+        assert_eq!(job.advance(&model,id,3,16,counter).unwrap(),last);
+        assert_eq!(job.advance(&model,id,0,2,counter),Err(Error::BindingMismatch));
+        assert_eq!(job.advance(&model,id,job.total,16,counter),Err(Error::Transition));
     }
 
     #[test]

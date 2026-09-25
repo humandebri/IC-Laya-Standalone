@@ -76,6 +76,46 @@ class ProfileReplyTests(unittest.TestCase):
         reply = '(variant { Ok = record { costs = vec { record { shape = vec { 128 : nat64; 3072; 1024 }; instructions = 1_234 : nat64; name = "int8.matmul" }; record { name = "norm"; shape = vec { 0; 0; 0 }; instructions = 42 } }; progress = record { instructions = 9999 } } })'
         self.assertEqual(parse_costs(reply), [dict(name="int8.matmul",shape=[128,3072,1024],instructions=1234),dict(name="norm",shape=[0,0,0],instructions=42)])
 
+class BatchClientTests(unittest.TestCase):
+    def test_batch_progress_and_partial_last_batch(self):
+        from canister_infer import infer
+        class FakeIcp:
+            def __init__(self): self.calls = []; self.completed = 0
+            def call(self, canister, method, args, **kwargs):
+                self.calls.append((method, args))
+                self.completed = min(self.completed + 16, 35)
+                return 'Ok record { job = blob \"' + r'\01'*32 + f'\"; total = 35; completed = {self.completed}; instructions = 100; cumulative_instructions = {len(self.calls)*100}; logits = opt vec {{ 1.0; -1.0 }} }}'
+        client = FakeIcp()
+        result = infer(client, ROOT / 'fixtures/tiny-int8-prenorm/input.json', stepped=True)
+        self.assertEqual(result['completed_steps'], [16,32,35])
+        self.assertEqual(result['inference_update_calls'], 3)
+        self.assertEqual(client.calls[0][0], 'start_token_inference_batch')
+        self.assertEqual([m for m,_ in client.calls[1:]], ['step_token_inference_batch']*2)
+        for (_, args), start in zip(client.calls[1:], [16,32]):
+            self.assertTrue(args.endswith(f', {start} : nat32, 16 : nat32)'))
+
+    def test_invalid_batch_size_never_calls_canister(self):
+        from canister_infer import infer, Failure
+        for size in [0,17]:
+            with self.assertRaises(Failure):
+                infer(None, None, stepped=True, steps_per_call=size)
+
+    def test_profile_keeps_one_step_per_call(self):
+        from canister_infer import infer
+        class FakeIcp:
+            def __init__(self): self.completed = 0
+            def call(self, canister, method, args, **kwargs):
+                if method == 'start_token_inference':
+                    return 'Ok record { job = blob "' + r'\01'*32 + '"; total = 2; instructions = 10 }'
+                assert method == 'profile_token_step'
+                assert args.endswith(f', {self.completed} : nat32)')
+                self.completed += 1
+                return 'Ok record { costs = vec {}; progress = record { completed = %d; instructions = 10; cumulative_instructions = 20; logits = opt vec { 1.0; -1.0 } } }' % self.completed
+        result = infer(FakeIcp(), ROOT / 'fixtures/tiny-int8-prenorm/input.json', stepped=True, profile=True)
+        self.assertEqual(result['completed_steps'], [1,2])
+        self.assertEqual(result['steps_per_call'], 1)
+        self.assertEqual(result['profiles'], [[],[]])
+
 
 if __name__ == "__main__":
     unittest.main()
