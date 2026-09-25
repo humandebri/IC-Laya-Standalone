@@ -32,6 +32,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - run: python3 tools/generate_int8_dot.py --check
       - run: bash tools/build_one.sh decision-engine
       - run: bash tools/build_one.sh executor
       - run: bash tools/build_one.sh mock-ledger
